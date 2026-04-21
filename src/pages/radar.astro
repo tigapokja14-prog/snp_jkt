@@ -36,7 +36,14 @@ const kabRadarData = kabData.map((kab) => ({
   standar: standarKeys.map((k) => +(kab.standar[k] || 0).toFixed(1)),
 }));
 
-const kabColors = ["#2563EB", "#0891B2", "#7C3AED", "#D97706", "#DC2626"];
+const kabColors = [
+  "#2563EB",
+  "#16A34A",
+  "#9333EA",
+  "#EA580C",
+  "#0891B2",
+  "#DC2626",
+];
 
 const sekolahList = activeData.map((s) => ({
   npsn: s.npsn,
@@ -324,12 +331,13 @@ const sekolahList = activeData.map((s) => ({
           label: kab.name,
           data: kab.standar,
           borderColor: kabColors[i],
-          backgroundColor: kabColors[i] + "12",
-          pointBackgroundColor: kabColors[i],
-          pointBorderColor: "#fff",
-          pointBorderWidth: 1.5,
-          borderWidth: 2,
-          pointRadius: 3,
+          backgroundColor: kabColors[i] + "08",
+          pointBackgroundColor: "#fff",
+          pointBorderColor: kabColors[i],
+          pointBorderWidth: 2,
+          borderWidth: 1.5,
+          pointRadius: 4,
+          pointHoverRadius: 6,
         })),
       },
       options: {
