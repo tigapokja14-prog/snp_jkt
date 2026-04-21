@@ -1,0 +1,513 @@
+---
+// src/pages/radar.astro
+import DashboardLayout from "../layouts/DashboardLayout.astro";
+import { getSNPData, avgByKabupaten } from "../lib/googleSheets";
+
+const data = await getSNPData();
+const activeData = data.filter((s) => s.snp > 0);
+const kabData = avgByKabupaten(data);
+
+const standarLabels = [
+  "Standar Isi",
+  "Standar Kelulusan",
+  "Standar Pengelolaan",
+  "Standar Penilaian",
+  "Standar Proses",
+  "Standar Sarpras",
+  "Standar PTK",
+  "Standar Biaya",
+];
+const standarKeys = [
+  "standarIsi",
+  "standarKelulusan",
+  "standarPengelolaan",
+  "standarPenilaian",
+  "standarProses",
+  "standarSarpras",
+  "standarPtk",
+  "standarBiaya",
+];
+const standarShort = ["SI", "SKL", "SPL", "SPN", "SPR", "SSP", "SPTK", "SB"];
+
+const kabRadarData = kabData.map((kab) => ({
+  name: kab.kabupaten.replace("Kota Adm. ", ""),
+  full: kab.kabupaten,
+  avgSNP: kab.avgSNP,
+  standar: standarKeys.map((k) => +(kab.standar[k] || 0).toFixed(1)),
+}));
+
+const kabColors = ["#2563EB", "#0891B2", "#7C3AED", "#D97706", "#DC2626"];
+
+const sekolahList = activeData.map((s) => ({
+  npsn: s.npsn,
+  nama: s.namaSekolah,
+  kab: s.kabupaten.replace("Kota Adm. ", ""),
+  snp: +s.snp.toFixed(2),
+  akreditasi: s.akreditasi,
+  standar: standarKeys.map((k) => +(s as any)[k].toFixed(1) || 0),
+}));
+---
+
+<DashboardLayout title="Radar SNP" activeMenu="radar">
+  <div
+    style="margin-bottom:16px;color:var(--text-secondary);font-size:13.5px"
+    class="fade-up"
+  >
+    Visualisasi radar 8 standar SNP — perbandingan antar wilayah atau pencarian
+    sekolah individual.
+  </div>
+
+  <!-- Mode tabs -->
+  <div
+    style="display:flex;gap:2px;padding:3px;background:var(--bg-muted);border-radius:9px;width:fit-content;margin-bottom:20px"
+    class="fade-up d1"
+  >
+    <button class="tab-btn active" data-mode="wilayah"
+      >Perbandingan Wilayah</button
+    >
+    <button class="tab-btn" data-mode="sekolah">Cari Sekolah</button>
+  </div>
+
+  <!-- WILAYAH -->
+  <div id="modeWilayah" class="fade-up d2">
+    <div class="grid-2 mb-6">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Radar SNP per Wilayah</div>
+        </div>
+        <div style="position:relative;height:360px">
+          <canvas id="radarKab"></canvas>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        {
+          kabRadarData.map((kab, i) => (
+            <div class="card" style="padding:14px 16px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div
+                    style={`width:10px;height:10px;border-radius:2px;background:${kabColors[i]};flex-shrink:0`}
+                  />
+                  <span style="font-size:13.5px;font-weight:500">
+                    {kab.name}
+                  </span>
+                </div>
+                <span
+                  class="mono"
+                  style={`font-size:16px;font-weight:600;color:${kabColors[i]}`}
+                >
+                  {kab.avgSNP.toFixed(1)}
+                </span>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+                {standarShort.map((sh, j) => (
+                  <div style="text-align:center;padding:5px 2px;background:var(--bg-subtle);border-radius:6px;border:1px solid var(--border-light)">
+                    <div
+                      class="mono"
+                      style={`font-size:11.5px;font-weight:600;color:${kabColors[i]}`}
+                    >
+                      {kab.standar[j]}
+                    </div>
+                    <div style="font-size:9.5px;color:var(--text-tertiary);margin-top:1px">
+                      {sh}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- SEKOLAH -->
+  <div id="modeSekolah" style="display:none" class="fade-up d2">
+    <div class="card mb-6">
+      <div class="card-title">Cari & Bandingkan Sekolah</div>
+      <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:220px;position:relative">
+          <input id="searchA" type="text" placeholder="Sekolah pertama..." />
+          <div id="dropA" class="search-drop"></div>
+        </div>
+        <div style="flex:1;min-width:220px;position:relative">
+          <input
+            id="searchB"
+            type="text"
+            placeholder="Sekolah kedua (opsional)..."
+          />
+          <div id="dropB" class="search-drop"></div>
+        </div>
+        <button id="clearBtn" class="btn">Clear</button>
+      </div>
+      <div
+        id="chips"
+        style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"
+      >
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Radar Perbandingan</div>
+        <div style="position:relative;height:360px">
+          <canvas id="radarSekolah"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Detail Per Standar</div>
+        <div id="detailPanel" style="margin-top:4px">
+          <div
+            style="display:flex;align-items:center;justify-content:center;height:280px;color:var(--text-tertiary);font-size:13px"
+          >
+            Pilih sekolah untuk melihat detail
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</DashboardLayout>
+
+<style>
+  .tab-btn {
+    padding: 6px 16px;
+    border-radius: 7px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tab-btn.active {
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+  .tab-btn:hover:not(.active) {
+    color: var(--text-primary);
+  }
+
+  input[type="text"] {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border-medium);
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-family: inherit;
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input[type="text"]:focus {
+    border-color: var(--accent);
+  }
+  input[type="text"]::placeholder {
+    color: var(--text-tertiary);
+  }
+
+  .search-drop {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    z-index: 50;
+    max-height: 220px;
+    overflow-y: auto;
+    display: none;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  }
+  .drop-item {
+    padding: 9px 12px;
+    font-size: 13px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border-light);
+    color: var(--text-primary);
+    transition: background 0.1s;
+  }
+  .drop-item:last-child {
+    border-bottom: none;
+  }
+  .drop-item:hover {
+    background: var(--bg-subtle);
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    border: 1px solid;
+    cursor: default;
+  }
+  .chip-x {
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.1s;
+  }
+  .chip-x:hover {
+    opacity: 1;
+  }
+</style>
+
+<script
+  src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"
+></script>
+<script
+  define:vars={{
+    kabRadarData,
+    kabColors,
+    standarLabels,
+    standarShort,
+    sekolahList,
+  }}
+>
+  const TOOLTIP = {
+    backgroundColor: "#fff",
+    borderColor: "#E8EAEE",
+    borderWidth: 1,
+    titleColor: "#111827",
+    bodyColor: "#4B5563",
+    padding: 10,
+    cornerRadius: 8,
+  };
+  const SCALE_R = {
+    min: 0,
+    max: 100,
+    ticks: {
+      stepSize: 25,
+      color: "#9CA3AF",
+      backdropColor: "transparent",
+      font: { size: 10 },
+    },
+    grid: { color: "#E8EAEE" },
+    pointLabels: { color: "#6B7280", font: { size: 11 } },
+    angleLines: { color: "#E8EAEE" },
+  };
+
+  function initCharts() {
+    if (typeof Chart === "undefined") {
+      setTimeout(initCharts, 50);
+      return;
+    }
+
+    // Mode tabs
+    document.querySelectorAll(".tab-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document
+          .querySelectorAll(".tab-btn")
+          .forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        const m = btn.dataset.mode;
+        document.getElementById("modeWilayah").style.display =
+          m === "wilayah" ? "" : "none";
+        document.getElementById("modeSekolah").style.display =
+          m === "sekolah" ? "" : "none";
+      });
+    });
+
+    // Radar wilayah
+    new Chart(document.getElementById("radarKab"), {
+      type: "radar",
+      data: {
+        labels: standarLabels,
+        datasets: kabRadarData.map((kab, i) => ({
+          label: kab.name,
+          data: kab.standar,
+          borderColor: kabColors[i],
+          backgroundColor: kabColors[i] + "12",
+          pointBackgroundColor: kabColors[i],
+          pointBorderColor: "#fff",
+          pointBorderWidth: 1.5,
+          borderWidth: 2,
+          pointRadius: 3,
+        })),
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: "bottom",
+            labels: {
+              color: "#4B5563",
+              font: { size: 12 },
+              padding: 16,
+              boxWidth: 10,
+              borderRadius: 3,
+            },
+          },
+          tooltip: TOOLTIP,
+        },
+        scales: { r: SCALE_R },
+      },
+    });
+
+    // Radar sekolah
+    const selColors = ["#2563EB", "#059669"];
+    let selected = [null, null];
+
+    const sekolahChart = new Chart(document.getElementById("radarSekolah"), {
+      type: "radar",
+      data: { labels: standarLabels, datasets: [] },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: "bottom",
+            labels: {
+              color: "#4B5563",
+              font: { size: 12 },
+              padding: 16,
+              boxWidth: 10,
+              borderRadius: 3,
+            },
+          },
+          tooltip: TOOLTIP,
+        },
+        scales: { r: SCALE_R },
+      },
+    });
+
+    function updateChart() {
+      sekolahChart.data.datasets = selected.filter(Boolean).map((s, i) => ({
+        label: s.nama.length > 30 ? s.nama.slice(0, 30) + "…" : s.nama,
+        data: s.standar,
+        borderColor: selColors[i],
+        backgroundColor: selColors[i] + "12",
+        pointBackgroundColor: selColors[i],
+        pointBorderColor: "#fff",
+        pointBorderWidth: 1.5,
+        borderWidth: 2,
+        pointRadius: 3,
+      }));
+      sekolahChart.update();
+
+      // Detail panel
+      const panel = document.getElementById("detailPanel");
+      if (!selected.filter(Boolean).length) {
+        panel.innerHTML =
+          '<div style="display:flex;align-items:center;justify-content:center;height:280px;color:var(--text-tertiary);font-size:13px">Pilih sekolah untuk melihat detail</div>';
+        return;
+      }
+      panel.innerHTML = standarShort
+        .map(
+          (sh, j) => `
+        <div style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <span style="font-size:12.5px;color:var(--text-secondary)">${standarLabels[j]}</span>
+            <div style="display:flex;gap:10px">
+              ${selected
+                .filter(Boolean)
+                .map(
+                  (s, i) =>
+                    `<span style="font-size:12.5px;font-weight:600;color:${selColors[i]};font-family:'JetBrains Mono',monospace">${s.standar[j]}</span>`,
+                )
+                .join("")}
+            </div>
+          </div>
+          ${selected
+            .filter(Boolean)
+            .map(
+              (s, i) => `
+            <div class="progress-bar" style="margin-bottom:3px">
+              <div class="progress-fill" style="width:${s.standar[j]}%;background:${selColors[i]};opacity:0.65"></div>
+            </div>
+          `,
+            )
+            .join("")}
+        </div>
+      `,
+        )
+        .join("");
+    }
+
+    function updateChips() {
+      const chips = document.getElementById("chips");
+      chips.innerHTML = selected
+        .filter(Boolean)
+        .map(
+          (s, i) => `
+        <div class="chip" style="background:${selColors[i]}12;border-color:${selColors[i]}40;color:${selColors[i]}">
+          ${s.nama.length > 28 ? s.nama.slice(0, 28) + "…" : s.nama}
+          <span class="chip-x" data-idx="${i}">✕</span>
+        </div>
+      `,
+        )
+        .join("");
+      chips.querySelectorAll(".chip-x").forEach((el) => {
+        el.addEventListener("click", () => {
+          selected[+el.dataset.idx] = null;
+          updateChart();
+          updateChips();
+        });
+      });
+    }
+
+    function setupSearch(inId, dropId, slot) {
+      const input = document.getElementById(inId);
+      const drop = document.getElementById(dropId);
+      input.addEventListener("input", () => {
+        const q = input.value.toLowerCase();
+        if (q.length < 2) {
+          drop.style.display = "none";
+          return;
+        }
+        const hits = sekolahList
+          .filter((s) => s.nama.toLowerCase().includes(q))
+          .slice(0, 8);
+        drop.innerHTML =
+          hits
+            .map(
+              (s) => `
+          <div class="drop-item" data-npsn="${s.npsn}">
+            <div style="font-weight:500">${s.nama}</div>
+            <div style="font-size:11.5px;color:var(--text-tertiary)">${s.kab} · SNP: ${s.snp} · Ak: ${s.akreditasi}</div>
+          </div>
+        `,
+            )
+            .join("") ||
+          '<div class="drop-item" style="color:var(--text-tertiary)">Tidak ditemukan</div>';
+        drop.style.display = "block";
+        drop.querySelectorAll("[data-npsn]").forEach((el) => {
+          el.addEventListener("click", () => {
+            const s = sekolahList.find((x) => x.npsn === el.dataset.npsn);
+            selected[slot] = s;
+            input.value = s.nama;
+            drop.style.display = "none";
+            updateChart();
+            updateChips();
+          });
+        });
+      });
+      document.addEventListener("click", (e) => {
+        if (!input.contains(e.target) && !drop.contains(e.target))
+          drop.style.display = "none";
+      });
+    }
+
+    setupSearch("searchA", "dropA", 0);
+    setupSearch("searchB", "dropB", 1);
+    document.getElementById("clearBtn").addEventListener("click", () => {
+      selected = [null, null];
+      document.getElementById("searchA").value = "";
+      document.getElementById("searchB").value = "";
+      updateChart();
+      updateChips();
+    });
+  }
+
+  if (document.readyState === "loading")
+    document.addEventListener("DOMContentLoaded", initCharts);
+  else initCharts();
+</script>

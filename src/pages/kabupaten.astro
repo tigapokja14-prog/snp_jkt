@@ -1,0 +1,245 @@
+---
+// src/pages/kabupaten.astro
+import DashboardLayout from "../layouts/DashboardLayout.astro";
+import { getSNPData, avgByKabupaten } from "../lib/googleSheets";
+
+const data = await getSNPData();
+const kabData = avgByKabupaten(data).sort((a, b) => b.avgSNP - a.avgSNP);
+
+const standarLabels = [
+  "Standar Isi",
+  "Standar Kelulusan",
+  "Standar Pengelolaan",
+  "Standar Penilaian",
+  "Standar Proses",
+  "Standar Sarpras",
+  "Standar PTK",
+  "Standar Biaya",
+];
+const standarKeys = [
+  "standarIsi",
+  "standarKelulusan",
+  "standarPengelolaan",
+  "standarPenilaian",
+  "standarProses",
+  "standarSarpras",
+  "standarPtk",
+  "standarBiaya",
+];
+const standarShort = ["SI", "SKL", "SPL", "SPN", "SPR", "SSP", "SPTK", "SB"];
+const kabColors = ["#2563EB", "#0891B2", "#7C3AED", "#D97706", "#DC2626"];
+
+const kabDetail = kabData.map((kab, i) => ({
+  name: kab.kabupaten.replace("Kota Adm. ", ""),
+  count: kab.count,
+  avgSNP: kab.avgSNP,
+  color: kabColors[i],
+  standar: standarKeys.map((k) => +(kab.standar[k] || 0).toFixed(1)),
+}));
+
+function snpColor(v: number) {
+  if (v >= 75) return "#059669";
+  if (v >= 60) return "#D97706";
+  return "#DC2626";
+}
+---
+
+<DashboardLayout title="Per Wilayah" activeMenu="kabupaten">
+  <div
+    style="margin-bottom:16px;color:var(--text-secondary);font-size:13.5px"
+    class="fade-up"
+  >
+    Analisis SNP berdasarkan 5 wilayah administratif Kota Jakarta.
+  </div>
+
+  <!-- Radar + legend -->
+  <div class="card mb-6 fade-up d1">
+    <div class="card-header">
+      <div class="card-title">Radar Perbandingan 5 Wilayah</div>
+    </div>
+    <div
+      style="display:grid;grid-template-columns:1fr 380px;gap:28px;align-items:start"
+    >
+      <div style="position:relative;height:400px">
+        <canvas id="radarAll"></canvas>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;padding-top:4px">
+        {
+          kabDetail.map((kab, i) => (
+            <div
+              style={`padding:14px 16px;background:var(--bg-subtle);border-radius:9px;border:1px solid var(--border-light)`}
+            >
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div
+                    style={`width:10px;height:10px;border-radius:2px;background:${kab.color}`}
+                  />
+                  <span style="font-size:13.5px;font-weight:500;color:var(--text-primary)">
+                    {kab.name}
+                  </span>
+                </div>
+                <div>
+                  <span
+                    class="mono"
+                    style={`font-size:17px;font-weight:600;color:${snpColor(kab.avgSNP)}`}
+                  >
+                    {kab.avgSNP.toFixed(1)}
+                  </span>
+                  <span style="font-size:11px;color:var(--text-tertiary);margin-left:5px">
+                    {kab.count} sekolah
+                  </span>
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px">
+                {standarShort.map((sh, j) => (
+                  <div style="text-align:center;padding:4px 2px;background:var(--bg-surface);border-radius:5px;border:1px solid var(--border-light)">
+                    <div
+                      class="mono"
+                      style={`font-size:11px;font-weight:600;color:${kab.color}`}
+                    >
+                      {kab.standar[j]}
+                    </div>
+                    <div style="font-size:9px;color:var(--text-tertiary);margin-top:1px">
+                      {sh}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Bar chart -->
+  <div class="card fade-up d2">
+    <div class="card-header">
+      <div class="card-title">Perbandingan Per Standar</div>
+      <span class="badge badge-gray">Semua wilayah</span>
+    </div>
+    <div style="position:relative;height:340px">
+      <canvas id="barKab"></canvas>
+    </div>
+  </div>
+</DashboardLayout>
+
+<script
+  src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"
+></script>
+<script define:vars={{ kabDetail, standarLabels, standarShort }}>
+  const TOOLTIP = {
+    backgroundColor: "#fff",
+    borderColor: "#E8EAEE",
+    borderWidth: 1,
+    titleColor: "#111827",
+    bodyColor: "#4B5563",
+    padding: 10,
+    cornerRadius: 8,
+  };
+  const SCALE_R = {
+    min: 0,
+    max: 100,
+    ticks: {
+      stepSize: 25,
+      color: "#9CA3AF",
+      backdropColor: "transparent",
+      font: { size: 10 },
+    },
+    grid: { color: "#E8EAEE" },
+    pointLabels: { color: "#6B7280", font: { size: 11 } },
+    angleLines: { color: "#E8EAEE" },
+  };
+
+  function initCharts() {
+    if (typeof Chart === "undefined") {
+      setTimeout(initCharts, 50);
+      return;
+    }
+
+    new Chart(document.getElementById("radarAll"), {
+      type: "radar",
+      data: {
+        labels: standarLabels,
+        datasets: kabDetail.map((kab) => ({
+          label: kab.name,
+          data: kab.standar,
+          borderColor: kab.color,
+          backgroundColor: kab.color + "12",
+          pointBackgroundColor: kab.color,
+          pointBorderColor: "#fff",
+          pointBorderWidth: 1.5,
+          borderWidth: 2,
+          pointRadius: 3,
+        })),
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: "bottom",
+            labels: {
+              color: "#4B5563",
+              font: { size: 12 },
+              padding: 16,
+              boxWidth: 10,
+              borderRadius: 3,
+            },
+          },
+          tooltip: TOOLTIP,
+        },
+        scales: { r: SCALE_R },
+      },
+    });
+
+    new Chart(document.getElementById("barKab"), {
+      type: "bar",
+      data: {
+        labels: standarShort,
+        datasets: kabDetail.map((kab) => ({
+          label: kab.name,
+          data: kab.standar,
+          backgroundColor: kab.color + "55",
+          borderColor: kab.color,
+          borderWidth: 1.5,
+          borderRadius: 4,
+          hoverBackgroundColor: kab.color + "99",
+        })),
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: "bottom",
+            labels: {
+              color: "#4B5563",
+              font: { size: 12 },
+              padding: 16,
+              boxWidth: 10,
+              borderRadius: 3,
+            },
+          },
+          tooltip: TOOLTIP,
+        },
+        scales: {
+          x: {
+            grid: { color: "#F3F4F6" },
+            ticks: { color: "#6B7280", font: { size: 12 } },
+          },
+          y: {
+            min: 0,
+            max: 100,
+            grid: { color: "#F3F4F6" },
+            ticks: { color: "#6B7280", font: { size: 12 } },
+          },
+        },
+      },
+    });
+  }
+
+  if (document.readyState === "loading")
+    document.addEventListener("DOMContentLoaded", initCharts);
+  else initCharts();
+</script>

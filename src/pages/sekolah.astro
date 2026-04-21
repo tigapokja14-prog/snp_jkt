@@ -1,0 +1,242 @@
+---
+// src/pages/sekolah.astro
+import DashboardLayout from "../layouts/DashboardLayout.astro";
+import { getSNPData } from "../lib/googleSheets";
+
+const data = await getSNPData();
+const kabList = [
+  ...new Set(data.map((s) => s.kabupaten.replace("Kota Adm. ", ""))),
+].sort();
+
+const sekolahData = data.map((s) => ({
+  npsn: s.npsn,
+  nama: s.namaSekolah,
+  kab: s.kabupaten.replace("Kota Adm. ", ""),
+  kec: s.kecamatan.replace("Kec. ", ""),
+  akreditasi: s.akreditasi,
+  siswa: s.siswa,
+  snp: +s.snp.toFixed(2),
+  statusAN: s.statusAN,
+  si: +s.standarIsi.toFixed(1),
+  skl: +s.standarKelulusan.toFixed(1),
+  ssp: +s.standarSarpras.toFixed(1),
+}));
+---
+
+<DashboardLayout title="Data Sekolah" activeMenu="sekolah">
+  <!-- Filter bar -->
+  <div class="card mb-6 fade-up">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <input
+        id="searchInput"
+        type="text"
+        placeholder="Cari nama sekolah atau NPSN..."
+        style="flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--border-medium);border-radius:8px;font-size:13.5px;font-family:inherit;background:var(--bg-surface);color:var(--text-primary);outline:none"
+      />
+
+      <select
+        id="filterKab"
+        style="padding:8px 12px;border:1px solid var(--border-medium);border-radius:8px;font-size:13.5px;font-family:inherit;background:var(--bg-surface);color:var(--text-primary);cursor:pointer;outline:none"
+      >
+        <option value="">Semua Wilayah</option>
+        {kabList.map((k) => <option value={k}>{k}</option>)}
+      </select>
+
+      <select
+        id="filterAk"
+        style="padding:8px 12px;border:1px solid var(--border-medium);border-radius:8px;font-size:13.5px;font-family:inherit;background:var(--bg-surface);color:var(--text-primary);cursor:pointer;outline:none"
+      >
+        <option value="">Semua Akreditasi</option>
+        <option value="A">Akreditasi A</option>
+        <option value="B">Akreditasi B</option>
+        <option value="C">Akreditasi C</option>
+        <option value="Tidak diisi">Belum Terakreditasi</option>
+      </select>
+
+      <select
+        id="filterAN"
+        style="padding:8px 12px;border:1px solid var(--border-medium);border-radius:8px;font-size:13.5px;font-family:inherit;background:var(--bg-surface);color:var(--text-primary);cursor:pointer;outline:none"
+      >
+        <option value="">Semua Status AN</option>
+        <option value="ikut">Ikut AN</option>
+        <option value="tidak">Tidak Ikut AN</option>
+      </select>
+
+      <span
+        id="countBadge"
+        class="badge badge-gray"
+        style="white-space:nowrap;flex-shrink:0">0 sekolah</span
+      >
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="card fade-up d1" style="padding:0;overflow:hidden">
+    <div style="overflow-x:auto">
+      <table class="data-table" id="tbl">
+        <thead>
+          <tr>
+            <th style="cursor:pointer" data-sort="nama">Nama Sekolah</th>
+            <th style="cursor:pointer" data-sort="kab">Wilayah</th>
+            <th>Akreditasi</th>
+            <th style="cursor:pointer;text-align:right" data-sort="siswa"
+              >Siswa</th
+            >
+            <th style="cursor:pointer;text-align:right" data-sort="snp">SNP</th>
+            <th style="text-align:right">SI</th>
+            <th style="text-align:right">SKL</th>
+            <th style="text-align:right">SSP</th>
+            <th>Status AN</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div
+    style="display:flex;align-items:center;justify-content:space-between;margin-top:14px"
+    class="fade-up d2"
+  >
+    <div style="font-size:12.5px;color:var(--text-tertiary)" id="pageInfo">
+    </div>
+    <div style="display:flex;gap:6px">
+      <button id="prevBtn" class="btn">← Prev</button>
+      <button id="nextBtn" class="btn">Next →</button>
+    </div>
+  </div>
+</DashboardLayout>
+
+<style>
+  input[type="text"]:focus {
+    border-color: var(--accent) !important;
+    outline: none;
+  }
+  select:focus {
+    border-color: var(--accent);
+    outline: none;
+  }
+</style>
+
+<script define:vars={{ sekolahData }}>
+  document.addEventListener("DOMContentLoaded", () => {
+    let filtered = [...sekolahData];
+    let sortKey = "snp",
+      sortDir = -1,
+      page = 1;
+    const PER = 15;
+
+    function sc(v) {
+      if (v >= 75) return "#059669";
+      if (v >= 60) return "#D97706";
+      if (v > 0) return "#DC2626";
+      return "#9CA3AF";
+    }
+
+    function akBadge(ak) {
+      const map = { A: "badge-blue", B: "badge-gray", C: "badge-amber" };
+      const cls = map[ak];
+      return cls
+        ? `<span class="badge ${cls}">${ak}</span>`
+        : `<span class="badge badge-gray">${ak || "—"}</span>`;
+    }
+
+    function anBadge(st) {
+      return st === "Ikut AN"
+        ? `<span class="badge badge-green">Ikut AN</span>`
+        : `<span class="badge badge-gray">Tidak</span>`;
+    }
+
+    function render() {
+      const start = (page - 1) * PER;
+      const rows = filtered.slice(start, start + PER);
+      document.getElementById("tbody").innerHTML = rows
+        .map(
+          (s) => `
+        <tr>
+          <td>
+            <div style="font-weight:500;color:var(--text-primary)">${s.nama}</div>
+            <div style="font-size:11.5px;color:var(--text-tertiary)">${s.npsn} · ${s.kec}</div>
+          </td>
+          <td style="font-size:13px;color:var(--text-secondary)">${s.kab}</td>
+          <td>${akBadge(s.akreditasi)}</td>
+          <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px">${s.siswa || "—"}</td>
+          <td style="text-align:right">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;color:${sc(s.snp)}">${s.snp > 0 ? s.snp : "—"}</span>
+          </td>
+          <td style="text-align:right;font-size:13px;color:var(--text-tertiary)">${s.si || "—"}</td>
+          <td style="text-align:right;font-size:13px;color:var(--text-tertiary)">${s.skl || "—"}</td>
+          <td style="text-align:right;font-size:13px;color:var(--text-tertiary)">${s.ssp || "—"}</td>
+          <td>${anBadge(s.statusAN)}</td>
+        </tr>
+      `,
+        )
+        .join("");
+      const total = Math.ceil(filtered.length / PER);
+      document.getElementById("pageInfo").textContent =
+        `Halaman ${page} dari ${total} · ${filtered.length} sekolah`;
+      document.getElementById("prevBtn").disabled = page === 1;
+      document.getElementById("nextBtn").disabled = page >= total;
+      document.getElementById("countBadge").textContent =
+        `${filtered.length} sekolah`;
+    }
+
+    function apply() {
+      const q = document.getElementById("searchInput").value.toLowerCase();
+      const kab = document.getElementById("filterKab").value;
+      const ak = document.getElementById("filterAk").value;
+      const an = document.getElementById("filterAN").value;
+      filtered = sekolahData.filter((s) => {
+        if (q && !s.nama.toLowerCase().includes(q) && !s.npsn.includes(q))
+          return false;
+        if (kab && s.kab !== kab) return false;
+        if (ak && s.akreditasi !== ak) return false;
+        if (an === "ikut" && s.statusAN !== "Ikut AN") return false;
+        if (an === "tidak" && s.statusAN === "Ikut AN") return false;
+        return true;
+      });
+      filtered.sort((a, b) => {
+        const va = a[sortKey] || 0,
+          vb = b[sortKey] || 0;
+        return typeof va === "string"
+          ? va.localeCompare(vb) * sortDir
+          : (va - vb) * sortDir;
+      });
+      page = 1;
+      render();
+    }
+
+    document.querySelectorAll("[data-sort]").forEach((th) => {
+      th.addEventListener("click", () => {
+        if (sortKey === th.dataset.sort) sortDir *= -1;
+        else {
+          sortKey = th.dataset.sort;
+          sortDir = -1;
+        }
+        apply();
+      });
+    });
+
+    ["searchInput", "filterKab", "filterAk", "filterAN"].forEach((id) => {
+      const el = document.getElementById(id);
+      el.addEventListener("input", apply);
+      el.addEventListener("change", apply);
+    });
+
+    document.getElementById("prevBtn").addEventListener("click", () => {
+      if (page > 1) {
+        page--;
+        render();
+      }
+    });
+    document.getElementById("nextBtn").addEventListener("click", () => {
+      if (page < Math.ceil(filtered.length / PER)) {
+        page++;
+        render();
+      }
+    });
+
+    apply();
+  });
+</script>
