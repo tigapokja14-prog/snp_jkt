@@ -27,7 +27,14 @@ const standarKeys = [
   "standarBiaya",
 ];
 const standarShort = ["SI", "SKL", "SPL", "SPN", "SPR", "SSP", "SPTK", "SB"];
-const kabColors = ["#2563EB", "#0891B2", "#7C3AED", "#D97706", "#DC2626"];
+const kabColors = [
+  "#2563EB",
+  "#16A34A",
+  "#9333EA",
+  "#EA580C",
+  "#0891B2",
+  "#DC2626",
+];
 
 const kabDetail = kabData.map((kab, i) => ({
   name: kab.kabupaten.replace("Kota Adm. ", ""),
@@ -165,12 +172,13 @@ function snpColor(v: number) {
           label: kab.name,
           data: kab.standar,
           borderColor: kab.color,
-          backgroundColor: kab.color + "12",
-          pointBackgroundColor: kab.color,
-          pointBorderColor: "#fff",
-          pointBorderWidth: 1.5,
-          borderWidth: 2,
-          pointRadius: 3,
+          backgroundColor: kab.color + "08",
+          borderWidth: 1.5,
+          pointBackgroundColor: "#fff",
+          pointBorderColor: kab.color,
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6,
         })),
       },
       options: {

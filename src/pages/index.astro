@@ -8,6 +8,8 @@ import {
   statusANDistribusi,
   rankingSekolah,
   statusAlokasiDistribusi,
+  statusLoginDistribusi,
+  statusUnduhDistribusi,
 } from "../lib/googleSheets";
 
 const data = await getSNPData();
@@ -17,6 +19,8 @@ const akreditasi = akreditasiDistribusi(data);
 const statusAN = statusANDistribusi(data);
 const statusAlokasi = statusAlokasiDistribusi(data);
 const topSekolah = rankingSekolah(data, true, 5);
+const statusLogin = statusLoginDistribusi(data);
+const statusUnduh = statusUnduhDistribusi(data);
 
 const avgSNP =
   activeData.length > 0
@@ -112,6 +116,18 @@ function snpColor(v: number) {
       <div class="kpi-label">Status alokasi</div>
       <div class="kpi-value">{statusAlokasi["Sudah Sesuai"] || 0}</div>
       <div class="kpi-sub">Status alokasi</div>
+    </div>
+
+    <div class="kpi d3 fade-up">
+      <div class="kpi-label">Status Login</div>
+      <div class="kpi-value">{statusLogin["Sudah Akses"] || 0}</div>
+      <div class="kpi-sub">Status Login</div>
+    </div>
+
+    <div class="kpi d3 fade-up">
+      <div class="kpi-label">Status Unduh</div>
+      <div class="kpi-value">{statusUnduh["Sudah Unduh"] || 0}</div>
+      <div class="kpi-sub">Status Unduh</div>
     </div>
   </div>
 

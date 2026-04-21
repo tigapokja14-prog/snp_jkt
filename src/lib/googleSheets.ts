@@ -143,107 +143,6 @@ function parseRow(row: string[]): SekolahData {
   };
 }
 
-/**
- * Data dummy untuk development/preview (struktur sama dengan data asli)
- * Gunakan ini saat API belum dikonfigurasi
- */
-
-/**
-
-export const DUMMY_DATA: SekolahData[] = [
-  {
-    tahun: 2025, npsn: '20104974', namaSekolah: 'SD ADVENT ANGGREK',
-    jenjang: 'SD', statusSekolah: 'Swasta', kabupaten: 'Kota Adm. Jakarta Utara',
-    provinsi: 'Prov. D.K.I. Jakarta', akreditasi: 'B', siswa: 100, kecamatan: 'Kec. Koja',
-    standarIsi: 53.71, standarKelulusan: 66.68, standarPengelolaan: 71.47,
-    standarPenilaian: 67.72, standarProses: 65.78, standarSarpras: 95.00,
-    standarPtk: 54.29, standarBiaya: 52.17, snp: 65.85,
-    mengikutiAN: 'Ya', statusAN: 'Ikut AN', statusLogin: 'Sudah Akses',
-    statusUnduh: 'Sudah Unduh', statusAlokasi: 'Belum Sesuai',
-    skl01: 79.56, skl02: 65.08, skl03: 55.4,
-    spr01: 63.79, spr02: 60.73, spr03: 68.86, spr04: 69.17, spr05: 63.09, spr06: 69.02,
-    si01: 64.41, si02: 46.32, si03: 50.40,
-    spn01: 65.37, spn02: 70.07,
-    spl01: 68.93, spl02: 74.01,
-    ssp01: 100, ssp02: 100, ssp03: 100, ssp04: 100, ssp05: 75,
-    sptk01: 59.70, sptk02: 57.44, sptk03: 16.67, sptk04: 83.33,
-    sb01: 52.17,
-  },
-  {
-    tahun: 2025, npsn: '20109442', namaSekolah: 'SD ADVENT MENTENG',
-    jenjang: 'SD', statusSekolah: 'Swasta', kabupaten: 'Kota Adm. Jakarta Pusat',
-    provinsi: 'Prov. D.K.I. Jakarta', akreditasi: 'A', siswa: 59, kecamatan: 'Kec. Menteng',
-    standarIsi: 52.38, standarKelulusan: 69.38, standarPengelolaan: 72.67,
-    standarPenilaian: 67.76, standarProses: 67.24, standarSarpras: 95.00,
-    standarPtk: 67.96, standarBiaya: 47.04, snp: 67.43,
-    mengikutiAN: 'Ya', statusAN: 'Ikut AN', statusLogin: 'Sudah Akses',
-    statusUnduh: 'Sudah Unduh', statusAlokasi: 'Belum Sesuai',
-    skl01: 83.89, skl02: 66.15, skl03: 58.1,
-    spr01: 62.58, spr02: 62.10, spr03: 72.67, spr04: 74.54, spr05: 60.56, spr06: 71.01,
-    si01: 62.36, si02: 46.55, si03: 48.24,
-    spn01: 69.86, spn02: 65.66,
-    spl01: 71.65, spl02: 73.68,
-    ssp01: 100, ssp02: 100, ssp03: 100, ssp04: 100, ssp05: 75,
-    sptk01: 57.74, sptk02: 64.11, sptk03: 50.00, sptk04: 100,
-    sb01: 47.04,
-  },
-  {
-    tahun: 2025, npsn: '20105618', namaSekolah: 'SD ASIH MULIA',
-    jenjang: 'SD', statusSekolah: 'Swasta', kabupaten: 'Kota Adm. Jakarta Barat',
-    provinsi: 'Prov. D.K.I. Jakarta', akreditasi: 'B', siswa: 123, kecamatan: 'Kec. Kali Deres',
-    standarIsi: 87.01, standarKelulusan: 70.12, standarPengelolaan: 92.85,
-    standarPenilaian: 82.85, standarProses: 86.43, standarSarpras: 85.69,
-    standarPtk: 64.35, standarBiaya: 28.07, snp: 74.67,
-    mengikutiAN: 'Ya', statusAN: 'Ikut AN', statusLogin: 'Sudah Akses',
-    statusUnduh: 'Sudah Unduh', statusAlokasi: 'Sudah Sesuai',
-    skl01: 73.80, skl02: 61.37, skl03: 75.2,
-    spr01: 86.14, spr02: 92.97, spr03: 91.34, spr04: 92.40, spr05: 78.66, spr06: 77.06,
-    si01: 80.86, si02: 92.32, si03: 87.85,
-    spn01: 85.67, spn02: 80.04,
-    spl01: 94.05, spl02: 91.66,
-    ssp01: 80, ssp02: 73.46, ssp03: 100, ssp04: 100, ssp05: 75,
-    sptk01: 91.67, sptk02: 94.31, sptk03: 0, sptk04: 71.43,
-    sb01: 28.07,
-  },
-  {
-    tahun: 2025, npsn: '20106239', namaSekolah: 'SD AL-AZHAR SYIFA BUDI',
-    jenjang: 'SD', statusSekolah: 'Swasta', kabupaten: 'Kota Adm. Jakarta Selatan',
-    provinsi: 'Prov. D.K.I. Jakarta', akreditasi: 'A', siswa: 189, kecamatan: 'Kec. Mampang Prapatan',
-    standarIsi: 64.11, standarKelulusan: 67.10, standarPengelolaan: 83.18,
-    standarPenilaian: 73.13, standarProses: 74.09, standarSarpras: 95.00,
-    standarPtk: 73.51, standarBiaya: 100.00, snp: 78.76,
-    mengikutiAN: 'Ya', statusAN: 'Ikut AN', statusLogin: 'Sudah Akses',
-    statusUnduh: 'Sudah Unduh', statusAlokasi: 'Belum Sesuai',
-    skl01: 75.69, skl02: 60.81, skl03: 64.8,
-    spr01: 69.64, spr02: 73.41, spr03: 76.88, spr04: 79.91, spr05: 69.13, spr06: 75.55,
-    si01: 66.47, si02: 62.31, si03: 63.54,
-    spn01: 67.60, spn02: 78.65,
-    spl01: 86.54, spl02: 79.83,
-    ssp01: 100, ssp02: 100, ssp03: 100, ssp04: 100, ssp05: 75,
-    sptk01: 70.37, sptk02: 75.68, sptk03: 52.00, sptk04: 96.00,
-    sb01: 100.00,
-  },
-  {
-    tahun: 2025, npsn: '20106228', namaSekolah: 'SD AL BAYYINAH MUHAMMADIYAH',
-    jenjang: 'SD', statusSekolah: 'Swasta', kabupaten: 'Kota Adm. Jakarta Selatan',
-    provinsi: 'Prov. D.K.I. Jakarta', akreditasi: 'A', siswa: 456, kecamatan: 'Kec. Jagakarsa',
-    standarIsi: 70.29, standarKelulusan: 73.57, standarPengelolaan: 84.75,
-    standarPenilaian: 73.39, standarProses: 76.10, standarSarpras: 84.63,
-    standarPtk: 71.84, standarBiaya: 37.69, snp: 71.53,
-    mengikutiAN: 'Ya', statusAN: 'Ikut AN', statusLogin: 'Sudah Akses',
-    statusUnduh: 'Sudah Unduh', statusAlokasi: 'Belum Sesuai',
-    skl01: 83.27, skl02: 68.44, skl03: 69.0,
-    spr01: 73.41, spr02: 73.94, spr03: 81.08, spr04: 80.46, spr05: 70.68, spr06: 77.03,
-    si01: 68.30, si02: 71.25, si03: 71.31,
-    spn01: 68.40, spn02: 78.39,
-    spl01: 88.27, spl02: 81.24,
-    ssp01: 100, ssp02: 80.67, ssp03: 100, ssp04: 80, ssp05: 62.5,
-    sptk01: 86.07, sptk02: 72.13, sptk03: 33.33, sptk04: 95.83,
-    sb01: 37.69,
-  },
-];
-
- */
 
 /**
  * Fungsi utama untuk mendapatkan data SNP
@@ -319,6 +218,27 @@ export function statusAlokasiDistribusi(data: SekolahData[]) {
   });
   return dist;
 }
+
+// Helper: Status Login
+export function statusLoginDistribusi(data: SekolahData[]) {
+  const dist: Record<string, number> = {};
+  data.forEach(s => {
+    const status = s.statusLogin || 'Sudah Akses';
+    dist[status] = (dist[status] || 0) + 1;
+  });
+  return dist;
+}
+
+// Helper: Status Unduh
+export function statusUnduhDistribusi(data: SekolahData[]) {
+  const dist: Record<string, number> = {};
+  data.forEach(s => {
+    const status = s.statusUnduh || 'sudah Unduh';
+    dist[status] = (dist[status] || 0) + 1;
+  });
+  return dist;
+}
+
 
 // Helper: Top/Bottom sekolah berdasarkan SNP
 export function rankingSekolah(data: SekolahData[], top = true, n = 5) {
