@@ -1,5 +1,4 @@
 ---
-// src/pages/index.astro
 import DashboardLayout from "../layouts/DashboardLayout.astro";
 import {
   getSNPData,
@@ -7,9 +6,6 @@ import {
   akreditasiDistribusi,
   statusANDistribusi,
   rankingSekolah,
-  statusAlokasiDistribusi,
-  statusLoginDistribusi,
-  statusUnduhDistribusi,
 } from "../lib/googleSheets";
 
 const data = await getSNPData();
@@ -17,58 +13,73 @@ const activeData = data.filter((s) => s.snp > 0);
 const kabData = avgByKabupaten(data);
 const akreditasi = akreditasiDistribusi(data);
 const statusAN = statusANDistribusi(data);
-const statusAlokasi = statusAlokasiDistribusi(data);
 const topSekolah = rankingSekolah(data, true, 5);
-const statusLogin = statusLoginDistribusi(data);
-const statusUnduh = statusUnduhDistribusi(data);
 
 const avgSNP =
   activeData.length > 0
     ? (activeData.reduce((s, d) => s + d.snp, 0) / activeData.length).toFixed(1)
     : "0";
 
-const standarLabels = [
-  { key: "standarIsi", label: "Standar Isi", short: "Isi", color: "#2563EB" },
+const statusLogin = data.reduce(
+  (acc, s) => {
+    const k = s.statusLogin || "Belum Akses";
+    acc[k] = (acc[k] || 0) + 1;
+    return acc;
+  },
+  {} as Record<string, number>,
+);
+
+const statusUnduh = data.reduce(
+  (acc, s) => {
+    const k = s.statusUnduh || "Belum Unduh";
+    acc[k] = (acc[k] || 0) + 1;
+    return acc;
+  },
+  {} as Record<string, number>,
+);
+
+const standarList = [
+  { key: "standarIsi", label: "Standar Isi", short: "SI", color: "#2563EB" },
   {
     key: "standarKelulusan",
     label: "Standar Kelulusan",
-    short: "Kelulusan",
+    short: "SKL",
     color: "#0891B2",
   },
   {
     key: "standarPengelolaan",
     label: "Standar Pengelolaan",
-    short: "Pengelolaan",
+    short: "SPL",
     color: "#7C3AED",
   },
   {
     key: "standarPenilaian",
     label: "Standar Penilaian",
-    short: "Penilaian",
+    short: "SPN",
     color: "#059669",
   },
   {
     key: "standarProses",
     label: "Standar Proses",
-    short: "Proses",
+    short: "SPR",
     color: "#D97706",
   },
   {
     key: "standarSarpras",
     label: "Standar Sarpras",
-    short: "Sarpras",
+    short: "SSP",
     color: "#DC2626",
   },
-  { key: "standarPtk", label: "Standar PTK", short: "PTK", color: "#DB2777" },
+  { key: "standarPtk", label: "Standar PTK", short: "SPTK", color: "#DB2777" },
   {
     key: "standarBiaya",
     label: "Standar Biaya",
-    short: "Biaya",
+    short: "SB",
     color: "#EA580C",
   },
 ];
 
-const avgStandar = standarLabels.map((s) => ({
+const avgStandar = standarList.map((s) => ({
   ...s,
   avg:
     activeData.length > 0
@@ -79,78 +90,160 @@ const avgStandar = standarLabels.map((s) => ({
       : "0",
 }));
 
-function snpColor(v: number) {
+function sc(v: number) {
   if (v >= 75) return "#059669";
   if (v >= 60) return "#D97706";
   return "#DC2626";
 }
 ---
 
-<DashboardLayout title="Overview" activeMenu="overview">
-  <!-- KPI row -->
-  <div class="grid-4 mb-6 fade-up">
+<DashboardLayout
+  title="Dashboard Provinsi"
+  subtitle="Gambaran besar pelaksanaan Standar Nasional Pendidikan Provinsi DKI Jakarta 2025"
+  activeMenu="overview"
+>
+  <!-- KPI Row — 6 cards dengan icon -->
+  <div class="grid-6 mb-6 fade-up">
     <div class="kpi">
-      <div class="kpi-label">Total Sekolah</div>
-      <div class="kpi-value">{data.length}</div>
-      <div class="kpi-sub">Sekolah SD terdaftar</div>
-    </div>
-    <div class="kpi d1 fade-up">
-      <div class="kpi-label">Rata-rata SNP</div>
-      <div class="kpi-value" style="color:var(--accent)">{avgSNP}</div>
-      <div class="kpi-sub">{activeData.length} sekolah aktif</div>
-    </div>
-    <div class="kpi d2 fade-up">
-      <div class="kpi-label">Ikut Asesmen</div>
-      <div class="kpi-value">{statusAN.ikut}</div>
-      <div class="kpi-sub">
-        {((statusAN.ikut / statusAN.total) * 100).toFixed(0)}% partisipasi AN
+      <div class="kpi-left">
+        <div class="kpi-label">Total Sekolah</div>
+        <div class="kpi-value">{data.length}</div>
+        <div class="kpi-sub">Sekolah</div>
+      </div>
+      <div class="kpi-icon" style="background:#EFF6FF">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#2563EB"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          ><path d="M3 21V9l9-6 9 6v12"></path><path d="M9 21v-6a3 3 0 016 0v6"
+          ></path></svg
+        >
       </div>
     </div>
-    <div class="kpi d3 fade-up">
-      <div class="kpi-label">Akreditasi A</div>
-      <div class="kpi-value">{akreditasi["A"] || 0}</div>
-      <div class="kpi-sub">Sekolah akreditasi A</div>
+
+    <div class="kpi d1 fade-up">
+      <div class="kpi-left">
+        <div class="kpi-label">Rata-rata SNP</div>
+        <div class="kpi-value" style="color:var(--accent)">{avgSNP}</div>
+        <div class="kpi-sub">{activeData.length} sekolah aktif</div>
+      </div>
+      <div class="kpi-icon" style="background:#EFF6FF">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#2563EB"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          ><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg
+        >
+      </div>
+    </div>
+
+    <div class="kpi d2 fade-up">
+      <div class="kpi-left">
+        <div class="kpi-label">Ikut Asesmen</div>
+        <div class="kpi-value">{statusAN.ikut}</div>
+        <div class="kpi-sub">
+          {((statusAN.ikut / statusAN.total) * 100).toFixed(0)}% partisipasi
+        </div>
+      </div>
+      <div class="kpi-icon" style="background:#ECFDF5">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#059669"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          ><path d="M9 11l3 3L22 4"></path><path
+            d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"
+          ></path></svg
+        >
+      </div>
     </div>
 
     <div class="kpi d3 fade-up">
-      <div class="kpi-label">Status alokasi</div>
-      <div class="kpi-value">{statusAlokasi["Sudah Sesuai"] || 0}</div>
-      <div class="kpi-sub">Status alokasi</div>
+      <div class="kpi-left">
+        <div class="kpi-label">Akreditasi A</div>
+        <div class="kpi-value">{akreditasi["A"] || 0}</div>
+        <div class="kpi-sub">Sekolah terakreditasi A</div>
+      </div>
+      <div class="kpi-icon" style="background:#FFFBEB">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#D97706"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          ><polygon
+            points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+          ></polygon></svg
+        >
+      </div>
     </div>
 
-    <div class="kpi d3 fade-up">
-      <div class="kpi-label">Status Login</div>
-      <div class="kpi-value">{statusLogin["Sudah Akses"] || 0}</div>
-      <div class="kpi-sub">Status Login</div>
+    <div class="kpi d4 fade-up">
+      <div class="kpi-left">
+        <div class="kpi-label">Sudah Login</div>
+        <div class="kpi-value">{statusLogin["Sudah Akses"] || 0}</div>
+        <div class="kpi-sub">Akses rapor pendidikan</div>
+      </div>
+      <div class="kpi-icon" style="background:#F5F3FF">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#7C3AED"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          ><rect x="3" y="11" width="18" height="11" rx="2"></rect><path
+            d="M7 11V7a5 5 0 0110 0v4"></path></svg
+        >
+      </div>
     </div>
 
-    <div class="kpi d3 fade-up">
-      <div class="kpi-label">Status Unduh</div>
-      <div class="kpi-value">{statusUnduh["Sudah Unduh"] || 0}</div>
-      <div class="kpi-sub">Status Unduh</div>
+    <div class="kpi d4 fade-up">
+      <div class="kpi-left">
+        <div class="kpi-label">Unduh Rapor</div>
+        <div class="kpi-value">{statusUnduh["Sudah Unduh"] || 0}</div>
+        <div class="kpi-sub">Sudah unduh alokasi</div>
+      </div>
+      <div class="kpi-icon" style="background:#FFF1F2">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#DC2626"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          ><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path><polyline
+            points="7 10 12 15 17 10"></polyline><line
+            x1="12"
+            y1="15"
+            x2="12"
+            y2="3"></line></svg
+        >
+      </div>
     </div>
   </div>
 
   <!-- Radar + Standar breakdown -->
   <div class="grid-2 mb-6 fade-up d2">
     <div class="card">
-      <div class="card-header">
-        <div class="card-title">Radar 8 Standar SNP</div>
-        <span class="badge badge-blue">Rata-rata keseluruhan</span>
-      </div>
-      <div style="position:relative;height:300px">
+      <div class="card-title">Radar 8 Standar SNP</div>
+      <div class="card-sub">Rata-rata capaian seluruh sekolah aktif</div>
+      <div style="position:relative;height:290px">
         <canvas id="radarMain"></canvas>
       </div>
     </div>
-
     <div class="card">
       <div class="card-title">Capaian Per Standar</div>
-      <div style="display:flex;flex-direction:column;gap:13px">
+      <div class="card-sub">Nilai rata-rata 0–100</div>
+      <div style="display:flex;flex-direction:column;gap:11px">
         {
           avgStandar.map((s) => (
             <div>
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
-                <span style="font-size:13px;color:var(--text-secondary)">
+                <span style="font-size:13px;color:var(--text-secondary);font-weight:500">
                   {s.label}
                 </span>
                 <span
@@ -163,7 +256,7 @@ function snpColor(v: number) {
               <div class="progress-bar">
                 <div
                   class="progress-fill"
-                  style={`width:${s.avg}%;background:${s.color};opacity:0.75`}
+                  style={`width:${s.avg}%;background:${s.color};opacity:0.8`}
                 />
               </div>
             </div>
@@ -173,27 +266,28 @@ function snpColor(v: number) {
     </div>
   </div>
 
-  <!-- Kabupaten + Top sekolah -->
+  <!-- Per wilayah + Top sekolah -->
   <div class="grid-2 mb-6 fade-up d3">
     <div class="card">
       <div class="card-title">SNP per Wilayah</div>
-      <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="card-sub">Rata-rata nilai SNP sekolah aktif</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
         {
           kabData
             .sort((a, b) => b.avgSNP - a.avgSNP)
             .map((kab, i) => (
               <div style="display:flex;align-items:center;gap:12px">
-                <span style="font-size:12px;color:var(--text-tertiary);width:16px;text-align:right;flex-shrink:0">
+                <span style="font-size:12px;color:var(--text-tertiary);font-weight:600;width:16px;text-align:right;flex-shrink:0">
                   {i + 1}
                 </span>
                 <div style="flex:1;min-width:0">
-                  <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-                    <span style="font-size:13px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                  <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+                    <span style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
                       {kab.kabupaten.replace("Kota Adm. ", "")}
                     </span>
                     <span
                       class="mono"
-                      style={`font-size:13px;font-weight:600;margin-left:8px;flex-shrink:0;color:${snpColor(kab.avgSNP)}`}
+                      style={`font-size:13px;font-weight:700;margin-left:8px;flex-shrink:0;color:${sc(kab.avgSNP)}`}
                     >
                       {kab.avgSNP.toFixed(1)}
                     </span>
@@ -216,54 +310,55 @@ function snpColor(v: number) {
 
     <div class="card">
       <div class="card-title">Top 5 Sekolah</div>
-      <div>
-        {
-          topSekolah.map((s, i) => (
-            <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border-light)">
-              <div
-                style={`width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;${
-                  i === 0
-                    ? "background:#FEF9C3;color:#854D0E"
-                    : i === 1
-                      ? "background:#F1F5F9;color:#475569"
-                      : i === 2
-                        ? "background:#FFF7ED;color:#9A3412"
-                        : "background:var(--bg-subtle);color:var(--text-tertiary)"
-                }`}
-              >
-                {i + 1}
-              </div>
-              <div style="flex:1;min-width:0">
-                <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-                  {s.namaSekolah}
-                </div>
-                <div style="font-size:11px;color:var(--text-tertiary)">
-                  {s.kabupaten.replace("Kota Adm. ", "")}
-                </div>
-              </div>
-              <span
-                class="mono"
-                style={`font-size:14px;font-weight:600;flex-shrink:0;color:${snpColor(s.snp)}`}
-              >
-                {s.snp.toFixed(1)}
-              </span>
+      <div class="card-sub">Nilai SNP tertinggi</div>
+      {
+        topSekolah.map((s, i) => (
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+            <div
+              style={`width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;${
+                i === 0
+                  ? "background:#FEF9C3;color:#854D0E"
+                  : i === 1
+                    ? "background:#F1F5F9;color:#475569"
+                    : i === 2
+                      ? "background:#FFF7ED;color:#9A3412"
+                      : "background:var(--bg-subtle);color:var(--text-tertiary)"
+              }`}
+            >
+              {i + 1}
             </div>
-          ))
-        }
-      </div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                {s.namaSekolah}
+              </div>
+              <div style="font-size:11px;color:var(--text-tertiary)">
+                {s.kabupaten.replace("Kota Adm. ", "")}
+              </div>
+            </div>
+            <span
+              class="mono"
+              style={`font-size:15px;font-weight:700;flex-shrink:0;color:${sc(s.snp)}`}
+            >
+              {s.snp.toFixed(1)}
+            </span>
+          </div>
+        ))
+      }
     </div>
   </div>
 
-  <!-- Distribusi akreditasi + Status AN -->
+  <!-- Doughnut charts -->
   <div class="grid-2 fade-up d4">
     <div class="card">
       <div class="card-title">Distribusi Akreditasi</div>
+      <div class="card-sub">Sebaran akreditasi sekolah SD</div>
       <div style="position:relative;height:200px">
         <canvas id="chartAk"></canvas>
       </div>
     </div>
     <div class="card">
       <div class="card-title">Status Asesmen Nasional</div>
+      <div class="card-sub">Partisipasi sekolah dalam AN</div>
       <div style="position:relative;height:200px">
         <canvas id="chartAN"></canvas>
       </div>
@@ -275,24 +370,35 @@ function snpColor(v: number) {
   src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"
 ></script>
 <script define:vars={{ avgStandar, akreditasi, statusAN }}>
-  const TOOLTIP = {
+  const TT = {
     backgroundColor: "#fff",
-    borderColor: "#E8EAEE",
+    borderColor: "#E5E7EB",
     borderWidth: 1,
     titleColor: "#111827",
-    bodyColor: "#4B5563",
+    bodyColor: "#6B7280",
     padding: 10,
     cornerRadius: 8,
-    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+  };
+  const SCALE_R = {
+    min: 0,
+    max: 100,
+    ticks: {
+      stepSize: 25,
+      color: "#9CA3AF",
+      backdropColor: "transparent",
+      font: { size: 10 },
+    },
+    grid: { color: "#F3F4F6" },
+    pointLabels: { color: "#6B7280", font: { size: 11, weight: "500" } },
+    angleLines: { color: "#E5E7EB" },
   };
 
-  function initCharts() {
+  function init() {
     if (typeof Chart === "undefined") {
-      setTimeout(initCharts, 50);
+      setTimeout(init, 50);
       return;
     }
 
-    // Radar
     new Chart(document.getElementById("radarMain"), {
       type: "radar",
       data: {
@@ -317,38 +423,17 @@ function snpColor(v: number) {
         plugins: {
           legend: { display: false },
           tooltip: {
-            ...TOOLTIP,
+            ...TT,
             callbacks: {
               label: (ctx) => ` ${avgStandar[ctx.dataIndex].label}: ${ctx.raw}`,
             },
           },
         },
-        scales: {
-          r: {
-            min: 0,
-            max: 100,
-            ticks: {
-              stepSize: 25,
-              color: "#9CA3AF",
-              backdropColor: "transparent",
-              font: { size: 10 },
-            },
-            grid: { color: "#E8EAEE" },
-            pointLabels: { color: "#6B7280", font: { size: 11 } },
-            angleLines: { color: "#E8EAEE" },
-          },
-        },
+        scales: { r: SCALE_R },
       },
     });
 
-    // Akreditasi
     const akKeys = Object.keys(akreditasi);
-    const akColors = {
-      A: "#2563EB",
-      B: "#0891B2",
-      C: "#D97706",
-      "Tidak diisi": "#9CA3AF",
-    };
     new Chart(document.getElementById("chartAk"), {
       type: "doughnut",
       data: {
@@ -356,7 +441,7 @@ function snpColor(v: number) {
         datasets: [
           {
             data: akKeys.map((k) => akreditasi[k]),
-            backgroundColor: akKeys.map((k) => akColors[k] || "#9CA3AF"),
+            backgroundColor: ["#2563EB", "#0891B2", "#D97706", "#9CA3AF"],
             borderColor: "#fff",
             borderWidth: 3,
             hoverOffset: 4,
@@ -378,12 +463,11 @@ function snpColor(v: number) {
               borderRadius: 3,
             },
           },
-          tooltip: TOOLTIP,
+          tooltip: TT,
         },
       },
     });
 
-    // Status AN
     new Chart(document.getElementById("chartAN"), {
       type: "doughnut",
       data: {
@@ -413,13 +497,13 @@ function snpColor(v: number) {
               borderRadius: 3,
             },
           },
-          tooltip: TOOLTIP,
+          tooltip: TT,
         },
       },
     });
   }
 
   if (document.readyState === "loading")
-    document.addEventListener("DOMContentLoaded", initCharts);
-  else initCharts();
+    document.addEventListener("DOMContentLoaded", init);
+  else init();
 </script>

@@ -1,11 +1,15 @@
 ---
-// src/layouts/DashboardLayout.astro
 export interface Props {
   title: string;
+  subtitle?: string;
   activeMenu?: string;
 }
 
-const { title, activeMenu = "overview" } = Astro.props;
+const {
+  title,
+  subtitle = "Provinsi DKI Jakarta · Jenjang SD · 2025",
+  activeMenu = "overview",
+} = Astro.props;
 
 const menuItems = [
   { id: "overview", label: "Overview", href: "/", icon: "grid" },
@@ -25,48 +29,46 @@ const menuItems = [
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap"
       rel="stylesheet"
     />
     <style is:global>
       :root {
-        --bg-page: #f5f6f8;
-        --bg-surface: #ffffff;
-        --bg-subtle: #f8f9fb;
-        --bg-muted: #eceef2;
+        --sidebar-w: 220px;
+        --sidebar-w-collapsed: 60px;
+        --topbar-h: 56px;
 
-        --border-light: #e8eaee;
-        --border-medium: #d1d5db;
+        --bg-page: #f0f2f5;
+        --bg-surface: #ffffff;
+        --bg-subtle: #f7f8fa;
+        --bg-hover: #f0f4ff;
+
+        --border: #e5e7eb;
+        --border-strong: #d1d5db;
 
         --text-primary: #111827;
-        --text-secondary: #4b5563;
+        --text-secondary: #6b7280;
         --text-tertiary: #9ca3af;
+        --text-sidebar: #374151;
 
         --accent: #2563eb;
-        --accent-hover: #1d4ed8;
         --accent-light: #eff6ff;
-        --accent-border: #bfdbfe;
+        --accent-text: #1d4ed8;
 
         --success: #059669;
         --success-bg: #ecfdf5;
-        --success-border: #a7f3d0;
         --warning: #d97706;
         --warning-bg: #fffbeb;
         --danger: #dc2626;
         --danger-bg: #fef2f2;
 
-        --c1: #2563eb;
-        --c2: #0891b2;
-        --c3: #059669;
-        --c4: #d97706;
-        --c5: #dc2626;
-        --c6: #7c3aed;
-
-        --sidebar-w: 240px;
-        --topbar-h: 58px;
         --radius-sm: 6px;
         --radius-md: 8px;
-        --radius-lg: 10px;
+        --radius-lg: 12px;
+        --radius-xl: 16px;
+
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06);
       }
 
       *,
@@ -79,11 +81,11 @@ const menuItems = [
       html {
         scroll-behavior: smooth;
       }
+
       body {
         font-family:
-          "Inter",
+          "Plus Jakarta Sans",
           -apple-system,
-          BlinkMacSystemFont,
           sans-serif;
         font-size: 14px;
         line-height: 1.55;
@@ -93,38 +95,49 @@ const menuItems = [
         -webkit-font-smoothing: antialiased;
       }
 
-      /* ══ LAYOUT ══ */
-      .layout {
+      /* ════════════════════════════════
+       LAYOUT
+    ════════════════════════════════ */
+      .app {
         display: flex;
         min-height: 100vh;
       }
 
-      /* ══ SIDEBAR ══ */
+      /* ════════════════════════════════
+       SIDEBAR
+    ════════════════════════════════ */
       .sidebar {
-        width: var(--sidebar-w);
+        width: 220px;
         background: var(--bg-surface);
-        border-right: 1px solid var(--border-light);
+        border-right: 1px solid var(--border);
         position: fixed;
         inset: 0 auto 0 0;
         display: flex;
         flex-direction: column;
-        z-index: 100;
-        transition: transform 0.22s ease;
+        z-index: 200;
+        overflow: hidden;
       }
 
+      .sidebar.collapsed {
+        width: var(--sidebar-w-collapsed);
+      }
+
+      /* Brand */
       .sidebar-brand {
         height: var(--topbar-h);
-        padding: 0 18px;
+        padding: 0 16px;
         display: flex;
         align-items: center;
         gap: 10px;
-        border-bottom: 1px solid var(--border-light);
+        border-bottom: 1px solid var(--border);
         flex-shrink: 0;
+        overflow: hidden;
+        white-space: nowrap;
       }
 
-      .brand-icon {
-        width: 30px;
-        height: 30px;
+      .brand-logo {
+        width: 28px;
+        height: 28px;
         background: var(--accent);
         border-radius: var(--radius-md);
         display: flex;
@@ -132,9 +145,9 @@ const menuItems = [
         justify-content: center;
         flex-shrink: 0;
       }
-      .brand-icon svg {
-        width: 15px;
-        height: 15px;
+      .brand-logo svg {
+        width: 14px;
+        height: 14px;
         stroke: #fff;
         fill: none;
         stroke-width: 2.2;
@@ -142,137 +155,210 @@ const menuItems = [
         stroke-linejoin: round;
       }
 
-      .brand-text {
-        min-width: 0;
+      .brand-info {
+        overflow: hidden;
       }
       .brand-name {
         font-size: 13.5px;
-        font-weight: 600;
+        font-weight: 700;
         color: var(--text-primary);
         white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
       }
       .brand-sub {
-        font-size: 11px;
+        font-size: 10.5px;
         color: var(--text-tertiary);
         white-space: nowrap;
       }
 
-      .sidebar-nav {
-        padding: 10px 8px;
+      /* Nav */
+      .sidebar-body {
         flex: 1;
         overflow-y: auto;
+        overflow-x: hidden;
+        padding: 8px 8px 0;
+      }
+
+      .nav-group {
+        margin-bottom: 4px;
       }
 
       .nav-group-label {
         font-size: 10px;
-        font-weight: 600;
-        letter-spacing: 0.07em;
+        font-weight: 700;
+        letter-spacing: 0.08em;
         text-transform: uppercase;
         color: var(--text-tertiary);
-        padding: 0 8px;
-        margin: 14px 0 5px;
+        padding: 10px 8px 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        transition: opacity 0.15s;
       }
-      .nav-group-label:first-child {
-        margin-top: 4px;
+      .sidebar.collapsed .nav-group-label {
+        opacity: 0;
       }
 
-      .nav-link {
+      .nav-item {
         display: flex;
         align-items: center;
-        gap: 9px;
-        padding: 7px 10px;
+        gap: 10px;
+        padding: 8px 9px;
         border-radius: var(--radius-md);
         text-decoration: none;
-        color: var(--text-secondary);
+        color: var(--text-sidebar);
         font-size: 13.5px;
-        font-weight: 400;
+        font-weight: 500;
+        white-space: nowrap;
         transition:
           background 0.12s,
           color 0.12s;
         margin-bottom: 1px;
-        position: relative;
+        overflow: hidden;
       }
-      .nav-link:hover {
+      .nav-item:hover {
         background: var(--bg-subtle);
         color: var(--text-primary);
       }
-      .nav-link.active {
+      .nav-item.active {
         background: var(--accent-light);
-        color: var(--accent);
-        font-weight: 500;
+        color: var(--accent-text);
       }
 
       .nav-icon {
-        width: 16px;
-        height: 16px;
+        width: 18px;
+        height: 18px;
         flex-shrink: 0;
-        opacity: 0.55;
+        opacity: 0.5;
+        transition: opacity 0.12s;
       }
-      .nav-link.active .nav-icon {
+      .nav-item.active .nav-icon,
+      .nav-item:hover .nav-icon {
         opacity: 1;
       }
 
+      .nav-label {
+        transition: opacity 0.15s;
+      }
+      .sidebar.collapsed .nav-label {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      /* Collapse toggle */
       .sidebar-footer {
-        padding: 12px 16px;
-        border-top: 1px solid var(--border-light);
+        border-top: 1px solid var(--border);
+        padding: 8px;
         flex-shrink: 0;
       }
+
+      .collapse-btn {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 9px;
+        border-radius: var(--radius-md);
+        border: none;
+        background: transparent;
+        color: var(--text-secondary);
+        font-size: 13px;
+        font-weight: 500;
+        font-family: inherit;
+        cursor: pointer;
+        white-space: nowrap;
+        overflow: hidden;
+        transition:
+          background 0.12s,
+          color 0.12s;
+      }
+      .collapse-btn:hover {
+        background: var(--bg-subtle);
+        color: var(--text-primary);
+      }
+
+      .collapse-icon {
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+        transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .sidebar.collapsed .collapse-icon {
+        transform: rotate(180deg);
+      }
+
+      .collapse-label {
+        transition: opacity 0.15s;
+      }
+      .sidebar.collapsed .collapse-label {
+        opacity: 0;
+      }
+
       .sidebar-status {
         display: flex;
         align-items: center;
         gap: 7px;
-        font-size: 11.5px;
+        padding: 6px 9px;
+        font-size: 11px;
         color: var(--text-tertiary);
+        white-space: nowrap;
+        overflow: hidden;
       }
       .status-dot {
-        width: 7px;
-        height: 7px;
+        width: 6px;
+        height: 6px;
         border-radius: 50%;
         background: var(--success);
         flex-shrink: 0;
       }
+      .sidebar.collapsed .status-label {
+        opacity: 0;
+      }
 
-      /* ══ MAIN ══ */
+      /* ════════════════════════════════
+       MAIN
+    ════════════════════════════════ */
       .main {
-        margin-left: var(--sidebar-w);
+        margin-left: 220px;
         flex: 1;
         display: flex;
         flex-direction: column;
+        min-height: 100vh;
       }
 
-      /* ══ TOPBAR ══ */
+      /* ════════════════════════════════
+       TOPBAR
+    ════════════════════════════════ */
       .topbar {
         height: var(--topbar-h);
         background: var(--bg-surface);
-        border-bottom: 1px solid var(--border-light);
-        padding: 0 26px;
+        border-bottom: 1px solid var(--border);
+        padding: 0 28px;
         display: flex;
         align-items: center;
         justify-content: space-between;
         position: sticky;
         top: 0;
-        z-index: 50;
+        z-index: 100;
         flex-shrink: 0;
       }
 
-      .topbar-info {
+      .topbar-left {
         display: flex;
         flex-direction: column;
         gap: 1px;
       }
-      .topbar-title {
-        font-size: 15px;
-        font-weight: 600;
+      .page-title {
+        font-size: 18px;
+        font-weight: 700;
         color: var(--text-primary);
+        letter-spacing: -0.02em;
       }
-      .topbar-sub {
-        font-size: 11.5px;
+      .page-sub {
+        font-size: 12px;
         color: var(--text-tertiary);
+        font-weight: 400;
       }
 
-      .topbar-actions {
+      .topbar-right {
         display: flex;
         align-items: center;
         gap: 8px;
@@ -283,13 +369,13 @@ const menuItems = [
         align-items: center;
         gap: 5px;
         height: 34px;
-        padding: 0 13px;
+        padding: 0 14px;
         border-radius: var(--radius-md);
         font-size: 13px;
-        font-weight: 500;
+        font-weight: 600;
         font-family: inherit;
         cursor: pointer;
-        border: 1px solid var(--border-medium);
+        border: 1px solid var(--border-strong);
         background: var(--bg-surface);
         color: var(--text-secondary);
         transition: all 0.12s;
@@ -311,69 +397,107 @@ const menuItems = [
         color: #fff;
       }
       .btn-primary:hover {
-        background: var(--accent-hover);
-        border-color: var(--accent-hover);
+        background: #1d4ed8;
+        border-color: #1d4ed8;
         color: #fff;
       }
 
-      /* ══ CONTENT ══ */
+      /* ════════════════════════════════
+       PAGE CONTENT
+    ════════════════════════════════ */
       .page-content {
-        padding: 22px 26px;
+        padding: 24px 28px;
         flex: 1;
       }
 
-      /* ══ CARD ══ */
+      /* ════════════════════════════════
+       CARDS
+    ════════════════════════════════ */
       .card {
         background: var(--bg-surface);
-        border: 1px solid var(--border-light);
+        border: 1px solid var(--border);
         border-radius: var(--radius-lg);
-        padding: 18px 20px;
+        padding: 20px 22px;
+        box-shadow: var(--shadow-sm);
       }
 
       .card-title {
-        font-size: 13px;
-        font-weight: 600;
+        font-size: 14px;
+        font-weight: 700;
         color: var(--text-primary);
-        margin-bottom: 14px;
+        margin-bottom: 4px;
+      }
+      .card-sub {
+        font-size: 12px;
+        color: var(--text-tertiary);
+        margin-bottom: 16px;
       }
 
       .card-header {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         justify-content: space-between;
-        margin-bottom: 14px;
+        margin-bottom: 16px;
       }
 
-      /* ══ KPI ══ */
+      /* ════════════════════════════════
+       KPI
+    ════════════════════════════════ */
       .kpi {
         background: var(--bg-surface);
-        border: 1px solid var(--border-light);
+        border: 1px solid var(--border);
         border-radius: var(--radius-lg);
-        padding: 16px 18px;
+        padding: 16px 20px;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        box-shadow: var(--shadow-sm);
       }
 
+      .kpi-left {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
       .kpi-label {
-        font-size: 11.5px;
+        font-size: 12.5px;
         font-weight: 500;
-        color: var(--text-tertiary);
-        margin-bottom: 7px;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
+        color: var(--text-secondary);
       }
       .kpi-value {
-        font-size: 26px;
-        font-weight: 600;
+        font-size: 30px;
+        font-weight: 700;
         color: var(--text-primary);
-        letter-spacing: -0.02em;
-        line-height: 1;
+        letter-spacing: -0.03em;
+        line-height: 1.1;
       }
       .kpi-sub {
         font-size: 11.5px;
         color: var(--text-tertiary);
-        margin-top: 5px;
       }
 
-      /* ══ GRID ══ */
+      .kpi-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .kpi-icon svg {
+        width: 18px;
+        height: 18px;
+      }
+
+      /* ════════════════════════════════
+       GRIDS
+    ════════════════════════════════ */
+      .grid-6 {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 14px;
+      }
       .grid-4 {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
@@ -394,17 +518,19 @@ const menuItems = [
         margin-bottom: 14px;
       }
       .mb-6 {
-        margin-bottom: 22px;
+        margin-bottom: 20px;
       }
 
-      /* ══ BADGES ══ */
+      /* ════════════════════════════════
+       BADGES
+    ════════════════════════════════ */
       .badge {
         display: inline-flex;
         align-items: center;
-        padding: 2px 7px;
-        border-radius: 5px;
+        padding: 2px 8px;
+        border-radius: 99px;
         font-size: 11.5px;
-        font-weight: 500;
+        font-weight: 600;
       }
       .badge-blue {
         background: #eff6ff;
@@ -427,40 +553,43 @@ const menuItems = [
         color: #374151;
       }
 
-      /* ══ PROGRESS ══ */
+      /* ════════════════════════════════
+       PROGRESS
+    ════════════════════════════════ */
       .progress-bar {
-        height: 5px;
-        background: var(--bg-muted);
+        height: 6px;
+        background: #f3f4f6;
         border-radius: 99px;
         overflow: hidden;
       }
       .progress-fill {
         height: 100%;
         border-radius: 99px;
-        transition: width 0.6s ease;
+        transition: width 0.7s ease;
       }
 
-      /* ══ TABLE ══ */
+      /* ════════════════════════════════
+       TABLE
+    ════════════════════════════════ */
       .data-table {
         width: 100%;
         border-collapse: collapse;
       }
       .data-table th {
         text-align: left;
-        padding: 9px 12px;
+        padding: 9px 14px;
         font-size: 11px;
-        font-weight: 600;
+        font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.06em;
         color: var(--text-tertiary);
-        border-bottom: 1px solid var(--border-light);
+        border-bottom: 1px solid var(--border);
         background: var(--bg-subtle);
-        white-space: nowrap;
       }
       .data-table td {
-        padding: 10px 12px;
+        padding: 11px 14px;
         font-size: 13.5px;
-        border-bottom: 1px solid var(--border-light);
+        border-bottom: 1px solid var(--border);
       }
       .data-table tbody tr:last-child td {
         border-bottom: none;
@@ -469,19 +598,17 @@ const menuItems = [
         background: var(--bg-subtle);
       }
 
-      /* ══ DIVIDER ══ */
+      /* ════════════════════════════════
+       UTILS
+    ════════════════════════════════ */
       .divider {
         height: 1px;
-        background: var(--border-light);
-        margin: 14px 0;
+        background: var(--border);
+        margin: 16px 0;
       }
-
-      /* ══ MONO ══ */
       .mono {
         font-family: "JetBrains Mono", monospace;
       }
-
-      /* ══ SNP COLORS ══ */
       .snp-high {
         color: var(--success);
       }
@@ -492,72 +619,9 @@ const menuItems = [
         color: var(--danger);
       }
 
-      /* ══ MOBILE TOGGLE ══ */
-      .menu-toggle {
-        display: none;
-        position: fixed;
-        top: 14px;
-        left: 14px;
-        z-index: 200;
-        background: var(--bg-surface);
-        border: 1px solid var(--border-light);
-        border-radius: var(--radius-md);
-        padding: 7px;
-        cursor: pointer;
-        color: var(--text-secondary);
-        align-items: center;
-        justify-content: center;
-      }
-
-      @media (max-width: 1024px) {
-        .menu-toggle {
-          display: flex;
-        }
-        .sidebar {
-          transform: translateX(-100%);
-        }
-        .sidebar.open {
-          transform: none;
-          box-shadow: 4px 0 24px rgba(0, 0, 0, 0.08);
-        }
-        .main {
-          margin-left: 0;
-        }
-        .topbar {
-          padding: 0 16px 0 52px;
-        }
-        .page-content {
-          padding: 18px 16px;
-        }
-        .grid-4 {
-          grid-template-columns: repeat(2, 1fr);
-        }
-        .grid-3 {
-          grid-template-columns: repeat(2, 1fr);
-        }
-      }
-      @media (max-width: 640px) {
-        .grid-4,
-        .grid-3,
-        .grid-2 {
-          grid-template-columns: 1fr;
-        }
-      }
-
-      /* ══ SCROLLBAR ══ */
-      ::-webkit-scrollbar {
-        width: 4px;
-        height: 4px;
-      }
-      ::-webkit-scrollbar-track {
-        background: transparent;
-      }
-      ::-webkit-scrollbar-thumb {
-        background: var(--border-medium);
-        border-radius: 10px;
-      }
-
-      /* ══ ANIMATION ══ */
+      /* ════════════════════════════════
+       ANIMATION
+    ════════════════════════════════ */
       @keyframes fadeUp {
         from {
           opacity: 0;
@@ -583,10 +647,95 @@ const menuItems = [
       .d4 {
         animation-delay: 0.2s;
       }
+
+      /* ════════════════════════════════
+       RESPONSIVE
+    ════════════════════════════════ */
+      @media (max-width: 1100px) {
+        .grid-6 {
+          grid-template-columns: repeat(3, 1fr);
+        }
+        .grid-4 {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      @media (max-width: 768px) {
+        .sidebar {
+          transform: translateX(-100%);
+          width: var(--sidebar-w) !important;
+        }
+        .sidebar.mobile-open {
+          transform: none;
+          box-shadow: 4px 0 24px rgba(0, 0, 0, 0.1);
+        }
+        .main,
+        .main.expanded {
+          margin-left: 0;
+        }
+        .topbar {
+          padding: 0 16px 0 52px;
+        }
+        .page-content {
+          padding: 16px;
+        }
+        .grid-6,
+        .grid-4,
+        .grid-3,
+        .grid-2 {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      @media (max-width: 480px) {
+        .grid-6,
+        .grid-4,
+        .grid-3,
+        .grid-2 {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* ════════════════════════════════
+       SCROLLBAR
+    ════════════════════════════════ */
+      ::-webkit-scrollbar {
+        width: 4px;
+        height: 4px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--border-strong);
+        border-radius: 10px;
+      }
+
+      /* Mobile toggle */
+      .mobile-toggle {
+        display: none;
+        position: fixed;
+        top: 14px;
+        left: 14px;
+        z-index: 300;
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 7px;
+        cursor: pointer;
+        color: var(--text-secondary);
+        align-items: center;
+        justify-content: center;
+        box-shadow: var(--shadow-sm);
+      }
+      @media (max-width: 768px) {
+        .mobile-toggle {
+          display: flex;
+        }
+      }
     </style>
   </head>
   <body>
-    <button class="menu-toggle" id="menuBtn" aria-label="Menu">
+    <!-- Mobile toggle -->
+    <button class="mobile-toggle" id="mobileToggle" aria-label="Menu">
       <svg
         width="18"
         height="18"
@@ -603,104 +752,120 @@ const menuItems = [
       </svg>
     </button>
 
-    <div class="layout">
-      <!-- SIDEBAR -->
+    <div class="app">
+      <!-- ══ SIDEBAR ══ -->
       <aside class="sidebar" id="sidebar">
         <div class="sidebar-brand">
-          <div class="brand-icon">
+          <div class="brand-logo">
             <svg viewBox="0 0 24 24"
               ><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"
               ></polyline></svg
             >
           </div>
-          <div class="brand-text">
+          <div class="brand-info">
             <div class="brand-name">Dashboard SNP</div>
             <div class="brand-sub">Standar Nasional Pendidikan</div>
           </div>
         </div>
 
-        <nav class="sidebar-nav">
-          <div class="nav-group-label">Navigasi</div>
-          {
-            menuItems.map((item) => (
-              <a
-                href={item.href}
-                class={`nav-link ${activeMenu === item.id ? "active" : ""}`}
-              >
-                <svg
-                  class="nav-icon"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
+        <div class="sidebar-body">
+          <div class="nav-group">
+            <div class="nav-group-label">Menu Utama</div>
+
+            {
+              menuItems.map((item) => (
+                <a
+                  href={item.href}
+                  class={`nav-item ${activeMenu === item.id ? "active" : ""}`}
                 >
-                  {item.icon === "grid" && (
-                    <>
-                      <rect x="3" y="3" width="7" height="7" rx="1" />
-                      <rect x="14" y="3" width="7" height="7" rx="1" />
-                      <rect x="3" y="14" width="7" height="7" rx="1" />
-                      <rect x="14" y="14" width="7" height="7" rx="1" />
-                    </>
-                  )}
-                  {item.icon === "radar" && (
-                    <>
-                      <circle cx="12" cy="12" r="9" />
-                      <circle cx="12" cy="12" r="4" />
-                      <circle cx="12" cy="12" r="1" fill="currentColor" />
-                      <line x1="12" y1="3" x2="12" y2="8" />
-                      <line x1="12" y1="16" x2="12" y2="21" />
-                      <line x1="3" y1="12" x2="8" y2="12" />
-                      <line x1="16" y1="12" x2="21" y2="12" />
-                    </>
-                  )}
-                  {item.icon === "school" && (
-                    <>
-                      <path d="M3 21V9l9-6 9 6v12" />
-                      <path d="M9 21v-6a3 3 0 016 0v6" />
-                    </>
-                  )}
-                  {item.icon === "map" && (
-                    <>
-                      <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
-                      <line x1="8" y1="2" x2="8" y2="18" />
-                      <line x1="16" y1="6" x2="16" y2="22" />
-                    </>
-                  )}
-                  {item.icon === "trophy" && (
-                    <>
-                      <path d="M6 9H4.5a2.5 2.5 0 010-5H6" />
-                      <path d="M18 9h1.5a2.5 2.5 0 000-5H18" />
-                      <path d="M4 22h16" />
-                      <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
-                      <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
-                      <path d="M18 2H6v7a6 6 0 0012 0V2z" />
-                    </>
-                  )}
-                </svg>
-                {item.label}
-              </a>
-            ))
-          }
-        </nav>
+                  <svg
+                    class="nav-icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    {item.icon === "grid" && (
+                      <>
+                        <rect x="3" y="3" width="7" height="7" rx="1" />
+                        <rect x="14" y="3" width="7" height="7" rx="1" />
+                        <rect x="3" y="14" width="7" height="7" rx="1" />
+                        <rect x="14" y="14" width="7" height="7" rx="1" />
+                      </>
+                    )}
+                    {item.icon === "radar" && (
+                      <>
+                        <circle cx="12" cy="12" r="9" />
+                        <circle cx="12" cy="12" r="4" />
+                        <circle cx="12" cy="12" r="1" fill="currentColor" />
+                        <line x1="12" y1="3" x2="12" y2="8" />
+                        <line x1="12" y1="16" x2="12" y2="21" />
+                        <line x1="3" y1="12" x2="8" y2="12" />
+                        <line x1="16" y1="12" x2="21" y2="12" />
+                      </>
+                    )}
+                    {item.icon === "school" && (
+                      <>
+                        <path d="M3 21V9l9-6 9 6v12" />
+                        <path d="M9 21v-6a3 3 0 016 0v6" />
+                      </>
+                    )}
+                    {item.icon === "map" && (
+                      <>
+                        <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
+                        <line x1="8" y1="2" x2="8" y2="18" />
+                        <line x1="16" y1="6" x2="16" y2="22" />
+                      </>
+                    )}
+                    {item.icon === "trophy" && (
+                      <>
+                        <path d="M6 9H4.5a2.5 2.5 0 010-5H6" />
+                        <path d="M18 9h1.5a2.5 2.5 0 000-5H18" />
+                        <path d="M4 22h16" />
+                        <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+                        <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+                        <path d="M18 2H6v7a6 6 0 0012 0V2z" />
+                      </>
+                    )}
+                  </svg>
+                  <span class="nav-label">{item.label}</span>
+                </a>
+              ))
+            }
+          </div>
+        </div>
 
         <div class="sidebar-footer">
           <div class="sidebar-status">
             <div class="status-dot"></div>
-            <span>Data 2025 · DKI Jakarta · SD</span>
+            <span class="status-label">Live · 2025 · DKI Jakarta</span>
           </div>
+          <button class="collapse-btn" id="collapseBtn">
+            <svg
+              class="collapse-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            >
+              <path d="M11 19l-7-7 7-7"></path><path d="M21 19l-7-7 7-7"></path>
+            </svg>
+            <span class="collapse-label">Tutup Panel</span>
+          </button>
         </div>
       </aside>
 
-      <!-- MAIN -->
-      <div class="main">
+      <!-- ══ MAIN ══ -->
+      <div class="main" id="main">
         <header class="topbar">
-          <div class="topbar-info">
-            <div class="topbar-title">{title}</div>
-            <div class="topbar-sub">Provinsi DKI Jakarta &middot; 2025</div>
+          <div class="topbar-left">
+            <div class="page-title">{title}</div>
+            <div class="page-sub">{subtitle}</div>
           </div>
-          <div class="topbar-actions">
+          <div class="topbar-right">
             <button class="btn" onclick="window.print()">
               <svg
                 viewBox="0 0 24 24"
@@ -741,16 +906,63 @@ const menuItems = [
     </div>
 
     <script>
-      const btn = document.getElementById("menuBtn");
       const sidebar = document.getElementById("sidebar");
-      btn?.addEventListener("click", () => sidebar?.classList.toggle("open"));
+      const main = document.getElementById("main");
+      const collapseBtn = document.getElementById("collapseBtn");
+      const mobileToggle = document.getElementById("mobileToggle");
+
+      const W_FULL = 220;
+      const W_COLLAPSED = 60;
+
+      function applyCollapsed(collapsed) {
+        if (collapsed) {
+          sidebar.style.width = W_COLLAPSED + "px";
+          main.style.marginLeft = W_COLLAPSED + "px";
+          sidebar.classList.add("collapsed");
+        } else {
+          sidebar.style.width = W_FULL + "px";
+          main.style.marginLeft = W_FULL + "px";
+          sidebar.classList.remove("collapsed");
+        }
+        localStorage.setItem("sidebarCollapsed", collapsed);
+      }
+
+      // Restore state immediately (no transition flash)
+      const savedCollapsed =
+        localStorage.getItem("sidebarCollapsed") === "true";
+      sidebar.style.transition = "none";
+      main.style.transition = "none";
+      applyCollapsed(savedCollapsed);
+
+      // Re-enable transition after initial render
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          sidebar.style.transition = "width 0.22s cubic-bezier(0.4,0,0.2,1)";
+          main.style.transition = "margin-left 0.22s cubic-bezier(0.4,0,0.2,1)";
+        });
+      });
+
+      // Toggle on button click
+      collapseBtn?.addEventListener("click", () => {
+        const isNowCollapsed = !sidebar.classList.contains("collapsed");
+        applyCollapsed(isNowCollapsed);
+      });
+
+      // Mobile toggle
+      mobileToggle?.addEventListener("click", () => {
+        sidebar.classList.toggle("mobile-open");
+      });
+
+      // Close sidebar on outside click (mobile)
       document.addEventListener("click", (e) => {
         if (
-          sidebar?.classList.contains("open") &&
+          window.innerWidth <= 768 &&
+          sidebar.classList.contains("mobile-open") &&
           !sidebar.contains(e.target) &&
-          e.target !== btn
-        )
-          sidebar.classList.remove("open");
+          e.target !== mobileToggle
+        ) {
+          sidebar.classList.remove("mobile-open");
+        }
       });
     </script>
   </body>
