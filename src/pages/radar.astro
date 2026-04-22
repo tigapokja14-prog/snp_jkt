@@ -1,11 +1,10 @@
 ---
 // src/pages/radar.astro
 import DashboardLayout from "../layouts/DashboardLayout.astro";
-import { getSNPData, avgByKabupaten } from "../lib/googleSheets";
+import { getSNPData } from "../lib/googleSheets";
 
 const data = await getSNPData();
 const activeData = data.filter((s) => s.snp > 0);
-const kabData = avgByKabupaten(data);
 
 const standarLabels = [
   "Standar Isi",
@@ -28,14 +27,6 @@ const standarKeys = [
   "standarBiaya",
 ];
 const standarShort = ["SI", "SKL", "SPL", "SPN", "SPR", "SSP", "SPTK", "SB"];
-
-const kabRadarData = kabData.map((kab) => ({
-  name: kab.kabupaten.replace("Kota Adm. ", ""),
-  full: kab.kabupaten,
-  avgSNP: kab.avgSNP,
-  standar: standarKeys.map((k) => +(kab.standar[k] || 0).toFixed(1)),
-}));
-
 const kabColors = [
   "#2563EB",
   "#16A34A",
@@ -45,23 +36,48 @@ const kabColors = [
   "#DC2626",
 ];
 
-const sekolahList = activeData.map((s) => ({
+// Daftar jenjang unik
+const jenjangList = [
+  ...new Set(data.map((s) => s.jenjang).filter(Boolean)),
+].sort();
+
+// Semua data aktif dikirim ke client untuk filter JS
+const allActive = activeData.map((s) => ({
   npsn: s.npsn,
   nama: s.namaSekolah,
+  jenjang: s.jenjang,
   kab: s.kabupaten.replace("Kota Adm. ", ""),
+  kabFull: s.kabupaten,
   snp: +s.snp.toFixed(2),
   akreditasi: s.akreditasi,
-  standar: standarKeys.map((k) => +(s as any)[k].toFixed(1) || 0),
+  standar: standarKeys.map((k) => +(s as any)[k]?.toFixed(1) || 0),
 }));
 ---
 
 <DashboardLayout title="Radar SNP" activeMenu="radar">
+  <!-- Filter Jenjang -->
   <div
-    style="margin-bottom:16px;color:var(--text-secondary);font-size:13.5px"
+    style="display:flex;align-items:center;gap:10px;margin-bottom:16px"
     class="fade-up"
   >
-    Visualisasi radar 8 standar SNP — perbandingan antar wilayah atau pencarian
-    sekolah individual.
+    <span style="font-size:13px;font-weight:600;color:var(--text-secondary)"
+      >Jenjang:</span
+    >
+    <div style="display:flex;gap:6px;flex-wrap:wrap" id="jenjangFilter">
+      <button class="filter-btn active" data-jenjang="">Semua</button>
+      {
+        jenjangList.map((j) => (
+          <button class="filter-btn" data-jenjang={j}>
+            {j}
+          </button>
+        ))
+      }
+    </div>
+    <span
+      id="filterInfo"
+      style="margin-left:auto;font-size:12px;color:var(--text-tertiary)"
+      >Semua jenjang</span
+    >
   </div>
 
   <!-- Mode tabs -->
@@ -75,64 +91,30 @@ const sekolahList = activeData.map((s) => ({
     <button class="tab-btn" data-mode="sekolah">Cari Sekolah</button>
   </div>
 
-  <!-- WILAYAH -->
+  <!-- WILAYAH MODE -->
   <div id="modeWilayah" class="fade-up d2">
     <div class="grid-2 mb-6">
       <div class="card">
         <div class="card-header">
           <div class="card-title">Radar SNP per Wilayah</div>
+          <span id="radarWilayahBadge" class="badge badge-blue"
+            >Semua jenjang</span
+          >
         </div>
         <div style="position:relative;height:360px">
           <canvas id="radarKab"></canvas>
         </div>
       </div>
 
-      <div style="display:flex;flex-direction:column;gap:12px">
-        {
-          kabRadarData.map((kab, i) => (
-            <div class="card" style="padding:14px 16px">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-                <div style="display:flex;align-items:center;gap:8px">
-                  <div
-                    style={`width:10px;height:10px;border-radius:2px;background:${kabColors[i]};flex-shrink:0`}
-                  />
-                  <span style="font-size:13.5px;font-weight:500">
-                    {kab.name}
-                  </span>
-                </div>
-                <span
-                  class="mono"
-                  style={`font-size:16px;font-weight:600;color:${kabColors[i]}`}
-                >
-                  {kab.avgSNP.toFixed(1)}
-                </span>
-              </div>
-              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
-                {standarShort.map((sh, j) => (
-                  <div style="text-align:center;padding:5px 2px;background:var(--bg-subtle);border-radius:6px;border:1px solid var(--border-light)">
-                    <div
-                      class="mono"
-                      style={`font-size:11.5px;font-weight:600;color:${kabColors[i]}`}
-                    >
-                      {kab.standar[j]}
-                    </div>
-                    <div style="font-size:9.5px;color:var(--text-tertiary);margin-top:1px">
-                      {sh}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))
-        }
+      <div id="kabCards" style="display:flex;flex-direction:column;gap:12px">
       </div>
     </div>
   </div>
 
-  <!-- SEKOLAH -->
+  <!-- SEKOLAH MODE -->
   <div id="modeSekolah" style="display:none" class="fade-up d2">
     <div class="card mb-6">
-      <div class="card-title">Cari & Bandingkan Sekolah</div>
+      <div class="card-title">Cari &amp; Bandingkan Sekolah</div>
       <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
         <div style="flex:1;min-width:220px;position:relative">
           <input id="searchA" type="text" placeholder="Sekolah pertama..." />
@@ -177,6 +159,28 @@ const sekolahList = activeData.map((s) => ({
 </DashboardLayout>
 
 <style>
+  .filter-btn {
+    padding: 5px 14px;
+    border-radius: 99px;
+    border: 1px solid var(--border-strong);
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    font-size: 12.5px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .filter-btn:hover {
+    background: var(--bg-subtle);
+    color: var(--text-primary);
+  }
+  .filter-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
   .tab-btn {
     padding: 6px 16px;
     border-radius: 7px;
@@ -245,6 +249,7 @@ const sekolahList = activeData.map((s) => ({
   .drop-item:hover {
     background: var(--bg-subtle);
   }
+
   .chip {
     display: inline-flex;
     align-items: center;
@@ -254,7 +259,6 @@ const sekolahList = activeData.map((s) => ({
     font-size: 12px;
     font-weight: 500;
     border: 1px solid;
-    cursor: default;
   }
   .chip-x {
     cursor: pointer;
@@ -269,15 +273,7 @@ const sekolahList = activeData.map((s) => ({
 <script
   src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"
 ></script>
-<script
-  define:vars={{
-    kabRadarData,
-    kabColors,
-    standarLabels,
-    standarShort,
-    sekolahList,
-  }}
->
+<script define:vars={{ allActive, kabColors, standarLabels, standarShort }}>
   const TOOLTIP = {
     backgroundColor: "#fff",
     borderColor: "#E8EAEE",
@@ -301,11 +297,149 @@ const sekolahList = activeData.map((s) => ({
     angleLines: { color: "#E8EAEE" },
   };
 
+  let radarKabChart = null;
+  let currentJenjang = "";
+
+  // Hitung rata-rata per kabupaten dari data yang difilter
+  function computeKabData(filtered) {
+    const map = {};
+    filtered.forEach((s) => {
+      if (!map[s.kab])
+        map[s.kab] = { standarSums: new Array(8).fill(0), count: 0, snpSum: 0 };
+      s.standar.forEach((v, i) => (map[s.kab].standarSums[i] += v));
+      map[s.kab].snpSum += s.snp;
+      map[s.kab].count++;
+    });
+    return Object.entries(map)
+      .map(([kab, v]) => ({
+        name: kab,
+        avgSNP: v.count ? v.snpSum / v.count : 0,
+        standar: v.standarSums.map(
+          (s) => +(v.count ? s / v.count : 0).toFixed(1),
+        ),
+      }))
+      .sort((a, b) => b.avgSNP - a.avgSNP);
+  }
+
+  function renderKabCards(kabData) {
+    document.getElementById("kabCards").innerHTML = kabData
+      .map(
+        (kab, i) => `
+      <div class="card" style="padding:14px 16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:10px;height:10px;border-radius:2px;background:${kabColors[i] || "#9CA3AF"};flex-shrink:0"></div>
+            <span style="font-size:13.5px;font-weight:500">${kab.name}</span>
+          </div>
+          <span style="font-size:16px;font-weight:600;color:${kabColors[i] || "#9CA3AF"};font-family:'JetBrains Mono',monospace">${kab.avgSNP.toFixed(1)}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+          ${standarShort
+            .map(
+              (sh, j) => `
+            <div style="text-align:center;padding:5px 2px;background:var(--bg-subtle);border-radius:6px;border:1px solid var(--border)">
+              <div style="font-size:11.5px;font-weight:600;color:${kabColors[i] || "#9CA3AF"};font-family:'JetBrains Mono',monospace">${kab.standar[j]}</div>
+              <div style="font-size:9.5px;color:var(--text-tertiary);margin-top:1px">${sh}</div>
+            </div>
+          `,
+            )
+            .join("")}
+        </div>
+      </div>
+    `,
+      )
+      .join("");
+  }
+
+  function updateRadarKab(kabData) {
+    const datasets = kabData.map((kab, i) => ({
+      label: kab.name,
+      data: kab.standar,
+      borderColor: kabColors[i] || "#9CA3AF",
+      backgroundColor: (kabColors[i] || "#9CA3AF") + "12",
+      pointBackgroundColor: kabColors[i] || "#9CA3AF",
+      pointBorderColor: "#fff",
+      pointBorderWidth: 1.5,
+      borderWidth: 2,
+      pointRadius: 3,
+    }));
+
+    if (radarKabChart) {
+      radarKabChart.data.datasets = datasets;
+      radarKabChart.update();
+    } else {
+      radarKabChart = new Chart(document.getElementById("radarKab"), {
+        type: "radar",
+        data: { labels: standarLabels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: "bottom",
+              labels: {
+                color: "#4B5563",
+                font: { size: 12 },
+                padding: 16,
+                boxWidth: 10,
+                borderRadius: 3,
+              },
+            },
+            tooltip: TOOLTIP,
+          },
+          scales: { r: SCALE_R },
+        },
+      });
+    }
+  }
+
+  function applyJenjangFilter(jenjang) {
+    const filtered = jenjang
+      ? allActive.filter((s) => s.jenjang === jenjang)
+      : allActive;
+    const kabData = computeKabData(filtered);
+
+    // Update radar wilayah
+    updateRadarKab(kabData);
+    renderKabCards(kabData);
+
+    // Update badge & info
+    const label = jenjang || "Semua jenjang";
+    document.getElementById("filterInfo").textContent = label;
+    document.getElementById("radarWilayahBadge").textContent = label;
+
+    // Update search list untuk mode sekolah
+    currentFilteredSekolah = filtered;
+  }
+
+  // ── SEKOLAH MODE ──
+  let currentFilteredSekolah = [...allActive];
+  const selColors = ["#2563EB", "#059669"];
+  let selected = [null, null];
+
   function initCharts() {
     if (typeof Chart === "undefined") {
       setTimeout(initCharts, 50);
       return;
     }
+
+    // Filter jenjang buttons
+    document.querySelectorAll(".filter-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document
+          .querySelectorAll(".filter-btn")
+          .forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentJenjang = btn.dataset.jenjang;
+        applyJenjangFilter(currentJenjang);
+        // Reset search saat filter berubah
+        selected = [null, null];
+        document.getElementById("searchA").value = "";
+        document.getElementById("searchB").value = "";
+        updateSekolahChart();
+        updateChips();
+      });
+    });
 
     // Mode tabs
     document.querySelectorAll(".tab-btn").forEach((btn) => {
@@ -322,48 +456,10 @@ const sekolahList = activeData.map((s) => ({
       });
     });
 
-    // Radar wilayah
-    new Chart(document.getElementById("radarKab"), {
-      type: "radar",
-      data: {
-        labels: standarLabels,
-        datasets: kabRadarData.map((kab, i) => ({
-          label: kab.name,
-          data: kab.standar,
-          borderColor: kabColors[i],
-          backgroundColor: kabColors[i] + "08",
-          pointBackgroundColor: "#fff",
-          pointBorderColor: kabColors[i],
-          pointBorderWidth: 2,
-          borderWidth: 1.5,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-        })),
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: "bottom",
-            labels: {
-              color: "#4B5563",
-              font: { size: 12 },
-              padding: 16,
-              boxWidth: 10,
-              borderRadius: 3,
-            },
-          },
-          tooltip: TOOLTIP,
-        },
-        scales: { r: SCALE_R },
-      },
-    });
+    // Initial render
+    applyJenjangFilter("");
 
     // Radar sekolah
-    const selColors = ["#2563EB", "#059669"];
-    let selected = [null, null];
-
     const sekolahChart = new Chart(document.getElementById("radarSekolah"), {
       type: "radar",
       data: { labels: standarLabels, datasets: [] },
@@ -387,7 +483,7 @@ const sekolahList = activeData.map((s) => ({
       },
     });
 
-    function updateChart() {
+    function updateSekolahChart() {
       sekolahChart.data.datasets = selected.filter(Boolean).map((s, i) => ({
         label: s.nama.length > 30 ? s.nama.slice(0, 30) + "…" : s.nama,
         data: s.standar,
@@ -401,7 +497,6 @@ const sekolahList = activeData.map((s) => ({
       }));
       sekolahChart.update();
 
-      // Detail panel
       const panel = document.getElementById("detailPanel");
       if (!selected.filter(Boolean).length) {
         panel.innerHTML =
@@ -440,6 +535,9 @@ const sekolahList = activeData.map((s) => ({
         .join("");
     }
 
+    // Expose ke outer scope
+    window.__updateSekolahChart = updateSekolahChart;
+
     function updateChips() {
       const chips = document.getElementById("chips");
       chips.innerHTML = selected
@@ -456,11 +554,13 @@ const sekolahList = activeData.map((s) => ({
       chips.querySelectorAll(".chip-x").forEach((el) => {
         el.addEventListener("click", () => {
           selected[+el.dataset.idx] = null;
-          updateChart();
+          updateSekolahChart();
           updateChips();
         });
       });
     }
+
+    window.__updateChips = updateChips;
 
     function setupSearch(inId, dropId, slot) {
       const input = document.getElementById(inId);
@@ -471,7 +571,8 @@ const sekolahList = activeData.map((s) => ({
           drop.style.display = "none";
           return;
         }
-        const hits = sekolahList
+        // Filter berdasarkan jenjang aktif + query nama
+        const hits = currentFilteredSekolah
           .filter((s) => s.nama.toLowerCase().includes(q))
           .slice(0, 8);
         drop.innerHTML =
@@ -480,7 +581,7 @@ const sekolahList = activeData.map((s) => ({
               (s) => `
           <div class="drop-item" data-npsn="${s.npsn}">
             <div style="font-weight:500">${s.nama}</div>
-            <div style="font-size:11.5px;color:var(--text-tertiary)">${s.kab} · SNP: ${s.snp} · Ak: ${s.akreditasi}</div>
+            <div style="font-size:11.5px;color:var(--text-tertiary)">${s.kab} · ${s.jenjang} · SNP: ${s.snp} · Ak: ${s.akreditasi}</div>
           </div>
         `,
             )
@@ -489,11 +590,13 @@ const sekolahList = activeData.map((s) => ({
         drop.style.display = "block";
         drop.querySelectorAll("[data-npsn]").forEach((el) => {
           el.addEventListener("click", () => {
-            const s = sekolahList.find((x) => x.npsn === el.dataset.npsn);
+            const s = currentFilteredSekolah.find(
+              (x) => x.npsn === el.dataset.npsn,
+            );
             selected[slot] = s;
             input.value = s.nama;
             drop.style.display = "none";
-            updateChart();
+            updateSekolahChart();
             updateChips();
           });
         });
@@ -506,13 +609,22 @@ const sekolahList = activeData.map((s) => ({
 
     setupSearch("searchA", "dropA", 0);
     setupSearch("searchB", "dropB", 1);
+
     document.getElementById("clearBtn").addEventListener("click", () => {
       selected = [null, null];
       document.getElementById("searchA").value = "";
       document.getElementById("searchB").value = "";
-      updateChart();
+      updateSekolahChart();
       updateChips();
     });
+  }
+
+  // Expose untuk filter buttons
+  function updateSekolahChart() {
+    window.__updateSekolahChart?.();
+  }
+  function updateChips() {
+    window.__updateChips?.();
   }
 
   if (document.readyState === "loading")
