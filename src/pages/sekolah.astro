@@ -17,6 +17,7 @@ const sekolahData = data.map((s) => ({
   siswa: s.siswa,
   snp: +s.snp.toFixed(2),
   statusAN: s.statusAN,
+  statusLogin: s.statusLogin,
   si: +s.standarIsi.toFixed(1),
   skl: +s.standarKelulusan.toFixed(1),
   ssp: +s.standarSarpras.toFixed(1),
@@ -62,6 +63,15 @@ const sekolahData = data.map((s) => ({
         <option value="tidak">Tidak Ikut AN</option>
       </select>
 
+      <select
+        id="filterLogin"
+        style="padding:8px 12px;border:1px solid var(--border-medium);border-radius:8px;font-size:13.5px;font-family:inherit;background:var(--bg-surface);color:var(--text-primary);cursor:pointer;outline:none"
+      >
+        <option value="">Semua Status Login</option>
+        <option value="sudah">Sudah Akses</option>
+        <option value="belum">Belum Akses</option>
+      </select>
+
       <span
         id="countBadge"
         class="badge badge-gray"
@@ -87,6 +97,7 @@ const sekolahData = data.map((s) => ({
             <th style="text-align:right">SKL</th>
             <th style="text-align:right">SSP</th>
             <th>Status AN</th>
+            <th>Status Login</th>
           </tr>
         </thead>
         <tbody id="tbody"></tbody>
@@ -148,6 +159,12 @@ const sekolahData = data.map((s) => ({
         : `<span class="badge badge-gray">Tidak</span>`;
     }
 
+    function loginBadge(st) {
+      return st === "Sudah Akses"
+        ? `<span class="badge badge-blue">Sudah Akses</span>`
+        : `<span class="badge badge-gray">Belum Akses</span>`;
+    }
+
     function render() {
       const start = (page - 1) * PER;
       const rows = filtered.slice(start, start + PER);
@@ -169,6 +186,7 @@ const sekolahData = data.map((s) => ({
           <td style="text-align:right;font-size:13px;color:var(--text-tertiary)">${s.skl || "—"}</td>
           <td style="text-align:right;font-size:13px;color:var(--text-tertiary)">${s.ssp || "—"}</td>
           <td>${anBadge(s.statusAN)}</td>
+          <td>${loginBadge(s.statusLogin)}</td>
         </tr>
       `,
         )
@@ -187,6 +205,7 @@ const sekolahData = data.map((s) => ({
       const kab = document.getElementById("filterKab").value;
       const ak = document.getElementById("filterAk").value;
       const an = document.getElementById("filterAN").value;
+      const login = document.getElementById("filterLogin").value;
       filtered = sekolahData.filter((s) => {
         if (q && !s.nama.toLowerCase().includes(q) && !s.npsn.includes(q))
           return false;
@@ -194,6 +213,8 @@ const sekolahData = data.map((s) => ({
         if (ak && s.akreditasi !== ak) return false;
         if (an === "ikut" && s.statusAN !== "Ikut AN") return false;
         if (an === "tidak" && s.statusAN === "Ikut AN") return false;
+        if (login === "sudah" && s.statusLogin !== "Sudah Akses") return false;
+        if (login === "belum" && s.statusLogin === "Sudah Akses") return false;
         return true;
       });
       filtered.sort((a, b) => {
@@ -218,11 +239,13 @@ const sekolahData = data.map((s) => ({
       });
     });
 
-    ["searchInput", "filterKab", "filterAk", "filterAN"].forEach((id) => {
-      const el = document.getElementById(id);
-      el.addEventListener("input", apply);
-      el.addEventListener("change", apply);
-    });
+    ["searchInput", "filterKab", "filterAk", "filterAN", "filterLogin"].forEach(
+      (id) => {
+        const el = document.getElementById(id);
+        el.addEventListener("input", apply);
+        el.addEventListener("change", apply);
+      },
+    );
 
     document.getElementById("prevBtn").addEventListener("click", () => {
       if (page > 1) {
