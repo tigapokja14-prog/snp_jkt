@@ -1,0 +1,65 @@
+/* empty css                                 */
+import { e as createComponent, n as renderComponent, r as renderTemplate, m as maybeRenderHead, g as addAttribute } from '../chunks/astro/server_3fFcbplZ.mjs';
+import 'piccolore';
+import { g as getSNPData, r as rankingSekolah, $ as $$DashboardLayout } from '../chunks/googleSheets_80LdkG3c.mjs';
+export { renderers } from '../renderers.mjs';
+
+const $$Ranking = createComponent(async ($$result, $$props, $$slots) => {
+  const data = await getSNPData();
+  const top10 = rankingSekolah(data, true, 10);
+  const bottom10 = rankingSekolah(data, false, 10);
+  const standarKeys = [
+    "standarIsi",
+    "standarKelulusan",
+    "standarPengelolaan",
+    "standarPenilaian",
+    "standarProses",
+    "standarSarpras",
+    "standarPtk",
+    "standarBiaya"
+  ];
+  const standarShort = ["SI", "SKL", "SPL", "SPN", "SPR", "SSP", "SPTK", "SB"];
+  const standarColors = [
+    "#2563EB",
+    "#0891B2",
+    "#7C3AED",
+    "#059669",
+    "#D97706",
+    "#DC2626",
+    "#DB2777",
+    "#EA580C"
+  ];
+  function snpColor(v) {
+    if (v >= 75) return "#059669";
+    if (v >= 60) return "#D97706";
+    return "#DC2626";
+  }
+  function rankBadgeStyle(i) {
+    if (i === 0)
+      return "background:#FEF9C3;color:#854D0E;border:1px solid #FDE68A";
+    if (i === 1)
+      return "background:#F1F5F9;color:#475569;border:1px solid #CBD5E1";
+    if (i === 2)
+      return "background:#FFF7ED;color:#9A3412;border:1px solid #FDBA74";
+    return "background:var(--bg-subtle);color:var(--text-tertiary);border:1px solid var(--border-light)";
+  }
+  return renderTemplate`${renderComponent($$result, "DashboardLayout", $$DashboardLayout, { "title": "Ranking Sekolah", "activeMenu": "ranking" }, { "default": async ($$result2) => renderTemplate` ${maybeRenderHead()}<div style="margin-bottom:16px;color:var(--text-secondary);font-size:13.5px" class="fade-up">
+Peringkat sekolah berdasarkan nilai SNP tertinggi dan terendah.
+</div> <div class="grid-2 fade-up d1"> <!-- TOP 10 --> <div> <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"> <div style="width:8px;height:8px;border-radius:50%;background:#059669"></div> <span style="font-size:14px;font-weight:600;color:var(--text-primary)">10 Terbaik</span> <span class="badge badge-green">Nilai SNP tertinggi</span> </div> <div style="display:flex;flex-direction:column;gap:8px"> ${top10.map((s, i) => renderTemplate`<div class="card" style="padding:14px 16px"> <div style="display:flex;align-items:flex-start;gap:12px"> <div${addAttribute(`width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;${rankBadgeStyle(i)}`, "style")}> ${i + 1} </div> <div style="flex:1;min-width:0"> <div style="display:flex;justify-content:space-between;align-items:start;gap:8px"> <div style="min-width:0"> <div style="font-size:13.5px;font-weight:500;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap"> ${s.namaSekolah} </div> <div style="font-size:11.5px;color:var(--text-tertiary);margin-top:2px"> ${s.kabupaten.replace("Kota Adm.", "").trim()} &middot;
+                        Ak. ${s.akreditasi} </div> </div> <span class="mono"${addAttribute(`font-size:18px;font-weight:600;flex-shrink:0;color:${snpColor(s.snp)}`, "style")}> ${s.snp.toFixed(1)} </span> </div> <div style="display:flex;gap:5px;margin-top:10px;flex-wrap:wrap"> ${standarKeys.map((k, j) => renderTemplate`<div${addAttribute(`text-align:center;padding:4px 7px;background:var(--bg-subtle);border-radius:5px;border:1px solid var(--border-light)`, "style")}> <div class="mono"${addAttribute(`font-size:11px;font-weight:600;color:${standarColors[j]}`, "style")}> ${(s[k] || 0).toFixed(0)} </div> <div style="font-size:9px;color:var(--text-tertiary);margin-top:1px"> ${standarShort[j]} </div> </div>`)} </div> </div> </div> </div>`)} </div> </div> <!-- BOTTOM 10 --> <div> <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"> <div style="width:8px;height:8px;border-radius:50%;background:#DC2626"></div> <span style="font-size:14px;font-weight:600;color:var(--text-primary)">Perlu Perhatian</span> <span class="badge badge-red">Nilai SNP terendah</span> </div> <div style="display:flex;flex-direction:column;gap:8px"> ${bottom10.map((s, i) => renderTemplate`<div class="card" style="padding:14px 16px;border-color:#FEE2E2"> <div style="display:flex;align-items:flex-start;gap:12px"> <div style="width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;background:#FEF2F2;color:#991B1B;border:1px solid #FECACA"> ${i + 1} </div> <div style="flex:1;min-width:0"> <div style="display:flex;justify-content:space-between;align-items:start;gap:8px"> <div style="min-width:0"> <div style="font-size:13.5px;font-weight:500;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap"> ${s.namaSekolah} </div> <div style="font-size:11.5px;color:var(--text-tertiary);margin-top:2px"> ${s.kabupaten.replace("Kota Adm.", "").trim()} &middot;
+                        Ak. ${s.akreditasi} </div> </div> <span class="mono" style="font-size:18px;font-weight:600;flex-shrink:0;color:#DC2626"> ${s.snp.toFixed(1)} </span> </div> <div style="display:flex;gap:5px;margin-top:10px;flex-wrap:wrap"> ${standarKeys.map((k, j) => renderTemplate`<div style="text-align:center;padding:4px 7px;background:var(--bg-subtle);border-radius:5px;border:1px solid var(--border-light)"> <div class="mono"${addAttribute(`font-size:11px;font-weight:600;color:${standarColors[j]}`, "style")}> ${(s[k] || 0).toFixed(0)} </div> <div style="font-size:9px;color:var(--text-tertiary);margin-top:1px"> ${standarShort[j]} </div> </div>`)} </div> </div> </div> </div>`)} </div> </div> </div> ` })}`;
+}, "G:/web/2snp/src/pages/ranking.astro", void 0);
+
+const $$file = "G:/web/2snp/src/pages/ranking.astro";
+const $$url = "/ranking";
+
+const _page = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
+  __proto__: null,
+  default: $$Ranking,
+  file: $$file,
+  url: $$url
+}, Symbol.toStringTag, { value: 'Module' }));
+
+const page = () => _page;
+
+export { page };

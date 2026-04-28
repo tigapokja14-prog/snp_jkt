@@ -1,0 +1,678 @@
+---
+import DashboardLayout from "../layouts/DashboardLayout.astro";
+import {
+  getSNPData,
+  avgByKabupaten,
+  akreditasiDistribusi,
+  statusANDistribusi,
+  rankingSekolah,
+} from "../lib/googleSheets";
+
+const data = await getSNPData();
+
+// Daftar jenjang unik dari data
+const jenjangList = [
+  ...new Set(data.map((s) => s.jenjang).filter(Boolean)),
+].sort();
+
+// Semua data mentah dikirim ke client untuk di-filter JS
+const allData = data.map((s) => ({
+  jenjang: s.jenjang,
+  snp: s.snp,
+  statusAN: s.statusAN,
+  statusLogin: s.statusLogin,
+  statusUnduh: s.statusUnduh,
+  akreditasi: s.akreditasi,
+  kabupaten: s.kabupaten,
+  namaSekolah: s.namaSekolah,
+  standarIsi: s.standarIsi,
+  standarKelulusan: s.standarKelulusan,
+  standarPengelolaan: s.standarPengelolaan,
+  standarPenilaian: s.standarPenilaian,
+  standarProses: s.standarProses,
+  standarSarpras: s.standarSarpras,
+  standarPtk: s.standarPtk,
+  standarBiaya: s.standarBiaya,
+}));
+
+const standarList = [
+  { key: "standarIsi", label: "Standar Isi", short: "SI", color: "#2563EB" },
+  {
+    key: "standarKelulusan",
+    label: "Standar Kelulusan",
+    short: "SKL",
+    color: "#0891B2",
+  },
+  {
+    key: "standarPengelolaan",
+    label: "Standar Pengelolaan",
+    short: "SPL",
+    color: "#7C3AED",
+  },
+  {
+    key: "standarPenilaian",
+    label: "Standar Penilaian",
+    short: "SPN",
+    color: "#059669",
+  },
+  {
+    key: "standarProses",
+    label: "Standar Proses",
+    short: "SPR",
+    color: "#D97706",
+  },
+  {
+    key: "standarSarpras",
+    label: "Standar Sarpras",
+    short: "SSP",
+    color: "#DC2626",
+  },
+  { key: "standarPtk", label: "Standar PTK", short: "SPTK", color: "#DB2777" },
+  {
+    key: "standarBiaya",
+    label: "Standar Biaya",
+    short: "SB",
+    color: "#EA580C",
+  },
+];
+---
+
+<DashboardLayout
+  title="Dashboard Utama"
+  subtitle="Gambaran besar pelaksanaan Standar Nasional Pendidikan"
+  activeMenu="overview"
+>
+  <!-- Filter Jenjang -->
+  <div
+    style="display:flex;align-items:center;gap:10px;margin-bottom:20px"
+    class="fade-up"
+  >
+    <span style="font-size:13px;font-weight:600;color:var(--text-secondary)"
+      >Jenjang:</span
+    >
+    <div style="display:flex;gap:6px;flex-wrap:wrap" id="jenjangFilter">
+      <button class="filter-btn active" data-jenjang="">Semua</button>
+      {
+        jenjangList.map((j) => (
+          <button class="filter-btn" data-jenjang={j}>
+            {j}
+          </button>
+        ))
+      }
+    </div>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
+      <div
+        style="width:7px;height:7px;border-radius:50%;background:var(--success)"
+      >
+      </div>
+      <span id="filterLabel" style="font-size:12px;color:var(--text-tertiary)"
+        >Semua jenjang</span
+      >
+    </div>
+  </div>
+
+  <!-- KPI Row -->
+  <div class="grid-6 mb-6 fade-up d1">
+    <div class="kpi">
+      <div class="kpi-left">
+        <div class="kpi-label">Total Sekolah</div>
+        <div class="kpi-value" id="kpiTotal">—</div>
+        <div class="kpi-sub" id="kpiTotalSub">Memuat...</div>
+      </div>
+      <div class="kpi-icon" style="background:#EFF6FF">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#2563EB"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          ><path d="M3 21V9l9-6 9 6v12"></path><path d="M9 21v-6a3 3 0 016 0v6"
+          ></path></svg
+        >
+      </div>
+    </div>
+
+    <div class="kpi">
+      <div class="kpi-left">
+        <div class="kpi-label">Rata-rata SNP</div>
+        <div class="kpi-value kpi-accent" id="kpiSNP">—</div>
+        <div class="kpi-sub" id="kpiSNPSub">Sekolah aktif</div>
+      </div>
+      <div class="kpi-icon" style="background:#EFF6FF">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#2563EB"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          ><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg
+        >
+      </div>
+    </div>
+
+    <div class="kpi">
+      <div class="kpi-left">
+        <div class="kpi-label">Ikut Asesmen</div>
+        <div class="kpi-value" id="kpiAN">—</div>
+        <div class="kpi-sub" id="kpiANSub">Partisipasi AN</div>
+      </div>
+      <div class="kpi-icon" style="background:#ECFDF5">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#059669"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          ><path d="M9 11l3 3L22 4"></path><path
+            d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"
+          ></path></svg
+        >
+      </div>
+    </div>
+
+    <div class="kpi">
+      <div class="kpi-left">
+        <div class="kpi-label">Akreditasi A</div>
+        <div class="kpi-value" id="kpiAkred">—</div>
+        <div class="kpi-sub">Terakreditasi A</div>
+      </div>
+      <div class="kpi-icon" style="background:#FFFBEB">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#D97706"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          ><polygon
+            points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+          ></polygon></svg
+        >
+      </div>
+    </div>
+
+    <div class="kpi">
+      <div class="kpi-left">
+        <div class="kpi-label">Sudah Login</div>
+        <div class="kpi-value" id="kpiLogin">—</div>
+        <div class="kpi-sub">Akses rapor pendidikan</div>
+      </div>
+      <div class="kpi-icon" style="background:#F5F3FF">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#7C3AED"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          ><rect x="3" y="11" width="18" height="11" rx="2"></rect><path
+            d="M7 11V7a5 5 0 0110 0v4"></path></svg
+        >
+      </div>
+    </div>
+
+    <div class="kpi">
+      <div class="kpi-left">
+        <div class="kpi-label">Unduh Rapor</div>
+        <div class="kpi-value" id="kpiUnduh">—</div>
+        <div class="kpi-sub">Sudah unduh alokasi</div>
+      </div>
+      <div class="kpi-icon" style="background:#FFF1F2">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#DC2626"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          ><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path><polyline
+            points="7 10 12 15 17 10"></polyline><line
+            x1="12"
+            y1="15"
+            x2="12"
+            y2="3"></line></svg
+        >
+      </div>
+    </div>
+  </div>
+
+  <!-- Radar + Standar -->
+  <div class="grid-2 mb-6 fade-up d2">
+    <div class="card">
+      <div class="card-title">Radar 8 Standar SNP</div>
+      <div class="card-sub" id="radarSub">
+        Rata-rata capaian seluruh sekolah aktif
+      </div>
+      <div style="position:relative;height:290px">
+        <canvas id="radarMain"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Capaian Per Standar</div>
+      <div class="card-sub">Nilai rata-rata 0–100</div>
+      <div id="standarBars" style="display:flex;flex-direction:column;gap:11px">
+      </div>
+    </div>
+  </div>
+
+  <!-- Per wilayah + Top sekolah -->
+  <div class="grid-2 mb-6 fade-up d3">
+    <div class="card">
+      <div class="card-title">SNP per Wilayah</div>
+      <div class="card-sub">Rata-rata nilai SNP sekolah aktif</div>
+      <div id="kabList" style="display:flex;flex-direction:column;gap:12px">
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Top 5 Sekolah</div>
+      <div class="card-sub">Nilai SNP tertinggi</div>
+      <div id="topList"></div>
+    </div>
+  </div>
+
+  <!-- Doughnut -->
+  <div class="grid-2 fade-up d4">
+    <div class="card">
+      <div class="card-title">Distribusi Akreditasi</div>
+      <div class="card-sub">Sebaran akreditasi sekolah</div>
+      <div style="position:relative;height:200px">
+        <canvas id="chartAk"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Status Asesmen Nasional</div>
+      <div class="card-sub">Partisipasi sekolah dalam AN</div>
+      <div style="position:relative;height:200px">
+        <canvas id="chartAN"></canvas>
+      </div>
+    </div>
+  </div>
+</DashboardLayout>
+
+<style>
+  .filter-btn {
+    padding: 5px 14px;
+    border-radius: 99px;
+    border: 1px solid var(--border-strong);
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    font-size: 12.5px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .filter-btn:hover {
+    background: var(--bg-subtle);
+    color: var(--text-primary);
+  }
+  .filter-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .kpi-accent {
+    color: var(--accent);
+  }
+</style>
+
+<script
+  src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"
+></script>
+<script define:vars={{ allData, standarList }}>
+  const TT = {
+    backgroundColor: "#fff",
+    borderColor: "#E5E7EB",
+    borderWidth: 1,
+    titleColor: "#111827",
+    bodyColor: "#6B7280",
+    padding: 10,
+    cornerRadius: 8,
+  };
+
+  let radarChart = null;
+  let akChart = null;
+  let anChart = null;
+  let currentJenjang = "";
+
+  function sc(v) {
+    if (v >= 75) return "#059669";
+    if (v >= 60) return "#D97706";
+    return "#DC2626";
+  }
+
+  function compute(jenjang) {
+    const d = jenjang ? allData.filter((s) => s.jenjang === jenjang) : allData;
+    const active = d.filter((s) => s.snp > 0);
+
+    const avgSNP = active.length
+      ? (active.reduce((s, x) => s + x.snp, 0) / active.length).toFixed(1)
+      : "0";
+
+    const ikutAN = d.filter((s) => s.statusAN === "Ikut AN").length;
+    const akredA = d.filter((s) => s.akreditasi === "A").length;
+    const sudahLogin = d.filter((s) => s.statusLogin === "Sudah Akses").length;
+    const sudahUnduh = d.filter((s) => s.statusUnduh === "Sudah Unduh").length;
+
+    // Avg per standar
+    const avgStandar = standarList.map((st) => ({
+      ...st,
+      avg: active.length
+        ? (
+            active.reduce((s, x) => s + (x[st.key] || 0), 0) / active.length
+          ).toFixed(1)
+        : "0",
+    }));
+
+    // Per kabupaten
+    const kabMap = {};
+    d.forEach((s) => {
+      if (s.snp === 0) return;
+      const k = s.kabupaten.replace("Kota Adm. ", "");
+      if (!kabMap[k]) kabMap[k] = { total: 0, count: 0 };
+      kabMap[k].total += s.snp;
+      kabMap[k].count++;
+    });
+    const kabData = Object.entries(kabMap)
+      .map(([kab, v]) => ({ kab, avg: v.total / v.count, count: v.count }))
+      .sort((a, b) => b.avg - a.avg);
+
+    // Top 5
+    const top5 = [...active].sort((a, b) => b.snp - a.snp).slice(0, 5);
+
+    // Akreditasi dist
+    const akDist = {};
+    d.forEach((s) => {
+      const k = s.akreditasi || "Tidak diisi";
+      akDist[k] = (akDist[k] || 0) + 1;
+    });
+
+    return {
+      d,
+      active,
+      avgSNP,
+      ikutAN,
+      akredA,
+      sudahLogin,
+      sudahUnduh,
+      avgStandar,
+      kabData,
+      top5,
+      akDist,
+    };
+  }
+
+  function updateKPI(r, jenjang) {
+    document.getElementById("kpiTotal").textContent = r.d.length;
+    document.getElementById("kpiTotalSub").textContent = jenjang
+      ? `Sekolah ${jenjang}`
+      : "Semua jenjang";
+    document.getElementById("kpiSNP").textContent = r.avgSNP;
+    document.getElementById("kpiSNPSub").textContent =
+      `${r.active.length} sekolah aktif`;
+    document.getElementById("kpiAN").textContent = r.ikutAN;
+    document.getElementById("kpiANSub").textContent =
+      `${r.d.length ? ((r.ikutAN / r.d.length) * 100).toFixed(0) : 0}% partisipasi`;
+    document.getElementById("kpiAkred").textContent = r.akredA;
+    document.getElementById("kpiLogin").textContent = r.sudahLogin;
+    document.getElementById("kpiUnduh").textContent = r.sudahUnduh;
+    document.getElementById("filterLabel").textContent = jenjang
+      ? `Jenjang: ${jenjang}`
+      : "Semua jenjang";
+    document.getElementById("radarSub").textContent =
+      `Rata-rata capaian ${jenjang || "semua"} sekolah aktif`;
+  }
+
+  function updateStandarBars(avgStandar) {
+    document.getElementById("standarBars").innerHTML = avgStandar
+      .map(
+        (s) => `
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+          <span style="font-size:13px;color:var(--text-secondary);font-weight:500">${s.label}</span>
+          <span style="font-size:13px;font-weight:600;color:${s.color};font-family:'JetBrains Mono',monospace">${s.avg}</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width:${s.avg}%;background:${s.color};opacity:0.8"></div>
+        </div>
+      </div>
+    `,
+      )
+      .join("");
+  }
+
+  function updateKabList(kabData) {
+    document.getElementById("kabList").innerHTML = kabData
+      .map(
+        (k, i) => `
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:12px;color:var(--text-tertiary);font-weight:600;width:16px;text-align:right;flex-shrink:0">${i + 1}</span>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+            <span style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${k.kab}</span>
+            <span style="font-size:13px;font-weight:700;margin-left:8px;flex-shrink:0;font-family:'JetBrains Mono',monospace;color:${sc(k.avg)}">${k.avg.toFixed(1)}</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width:${k.avg}%;background:var(--accent)"></div>
+          </div>
+          <div style="font-size:11px;color:var(--text-tertiary);margin-top:2px">${k.count} sekolah aktif</div>
+        </div>
+      </div>
+    `,
+      )
+      .join("");
+  }
+
+  function updateTopList(top5) {
+    const rankStyle = (i) =>
+      i === 0
+        ? "background:#FEF9C3;color:#854D0E"
+        : i === 1
+          ? "background:#F1F5F9;color:#475569"
+          : i === 2
+            ? "background:#FFF7ED;color:#9A3412"
+            : "background:var(--bg-subtle);color:var(--text-tertiary)";
+
+    document.getElementById("topList").innerHTML = top5
+      .map(
+        (s, i) => `
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+        <div style="width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;${rankStyle(i)}">${i + 1}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.namaSekolah}</div>
+          <div style="font-size:11px;color:var(--text-tertiary)">${s.kabupaten.replace("Kota Adm. ", "")} · ${s.jenjang}</div>
+        </div>
+        <span style="font-size:15px;font-weight:700;flex-shrink:0;font-family:'JetBrains Mono',monospace;color:${sc(s.snp)}">${s.snp.toFixed(1)}</span>
+      </div>
+    `,
+      )
+      .join("");
+  }
+
+  function updateRadar(avgStandar) {
+    const labels = avgStandar.map((s) => s.short);
+    const values = avgStandar.map((s) => parseFloat(s.avg));
+    if (radarChart) {
+      radarChart.data.labels = labels;
+      radarChart.data.datasets[0].data = values;
+      radarChart.update();
+    } else {
+      radarChart = new Chart(document.getElementById("radarMain"), {
+        type: "radar",
+        data: {
+          labels,
+          datasets: [
+            {
+              label: "Rata-rata",
+              data: values,
+              borderColor: "#2563EB",
+              backgroundColor: "rgba(37,99,235,0.08)",
+              pointBackgroundColor: "#2563EB",
+              pointBorderColor: "#fff",
+              pointBorderWidth: 2,
+              borderWidth: 2,
+              pointRadius: 4,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              ...TT,
+              callbacks: {
+                label: (ctx) =>
+                  ` ${avgStandar[ctx.dataIndex].label}: ${ctx.raw}`,
+              },
+            },
+          },
+          scales: {
+            r: {
+              min: 0,
+              max: 100,
+              ticks: {
+                stepSize: 25,
+                color: "#9CA3AF",
+                backdropColor: "transparent",
+                font: { size: 10 },
+              },
+              grid: { color: "#F3F4F6" },
+              pointLabels: {
+                color: "#6B7280",
+                font: { size: 11, weight: "500" },
+              },
+              angleLines: { color: "#E5E7EB" },
+            },
+          },
+        },
+      });
+    }
+  }
+
+  function updateDoughnuts(akDist, ikutAN, total) {
+    const akKeys = Object.keys(akDist);
+    const akColors = {
+      A: "#2563EB",
+      B: "#0891B2",
+      C: "#D97706",
+      "Tidak diisi": "#9CA3AF",
+    };
+
+    if (akChart) {
+      akChart.data.labels = akKeys;
+      akChart.data.datasets[0].data = akKeys.map((k) => akDist[k]);
+      akChart.data.datasets[0].backgroundColor = akKeys.map(
+        (k) => akColors[k] || "#9CA3AF",
+      );
+      akChart.update();
+    } else {
+      akChart = new Chart(document.getElementById("chartAk"), {
+        type: "doughnut",
+        data: {
+          labels: akKeys,
+          datasets: [
+            {
+              data: akKeys.map((k) => akDist[k]),
+              backgroundColor: akKeys.map((k) => akColors[k] || "#9CA3AF"),
+              borderColor: "#fff",
+              borderWidth: 3,
+              hoverOffset: 4,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: "65%",
+          plugins: {
+            legend: {
+              position: "right",
+              labels: {
+                color: "#4B5563",
+                font: { size: 12 },
+                padding: 14,
+                boxWidth: 10,
+                borderRadius: 3,
+              },
+            },
+            tooltip: TT,
+          },
+        },
+      });
+    }
+
+    if (anChart) {
+      anChart.data.datasets[0].data = [ikutAN, total - ikutAN];
+      anChart.update();
+    } else {
+      anChart = new Chart(document.getElementById("chartAN"), {
+        type: "doughnut",
+        data: {
+          labels: ["Ikut AN", "Tidak Ikut"],
+          datasets: [
+            {
+              data: [ikutAN, total - ikutAN],
+              backgroundColor: ["#059669", "#E5E7EB"],
+              borderColor: "#fff",
+              borderWidth: 3,
+              hoverOffset: 4,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: "65%",
+          plugins: {
+            legend: {
+              position: "right",
+              labels: {
+                color: "#4B5563",
+                font: { size: 12 },
+                padding: 14,
+                boxWidth: 10,
+                borderRadius: 3,
+              },
+            },
+            tooltip: TT,
+          },
+        },
+      });
+    }
+  }
+
+  function render(jenjang) {
+    const r = compute(jenjang);
+    updateKPI(r, jenjang);
+    updateStandarBars(r.avgStandar);
+    updateKabList(r.kabData);
+    updateTopList(r.top5);
+    updateRadar(r.avgStandar);
+    updateDoughnuts(r.akDist, r.ikutAN, r.d.length);
+  }
+
+  function init() {
+    if (typeof Chart === "undefined") {
+      setTimeout(init, 50);
+      return;
+    }
+
+    // Filter buttons
+    document.querySelectorAll(".filter-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document
+          .querySelectorAll(".filter-btn")
+          .forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentJenjang = btn.dataset.jenjang;
+        render(currentJenjang);
+      });
+    });
+
+    // Initial render
+    render("");
+  }
+
+  if (document.readyState === "loading")
+    document.addEventListener("DOMContentLoaded", init);
+  else init();
+</script>
