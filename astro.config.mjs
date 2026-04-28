@@ -3,5 +3,5 @@ import tailwind from '@astrojs/tailwind';
 
 export default defineConfig({
   integrations: [tailwind()],
-  output: 'static',  // ← kembali ke static ya
+  output: 'static',
 });
