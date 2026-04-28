@@ -76,7 +76,10 @@ export const SHEETS_CONFIG = {
 export async function fetchFromGoogleSheets(): Promise<SekolahData[]> {
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_CONFIG.SPREADSHEET_ID}/values/${encodeURIComponent(SHEETS_CONFIG.RANGE)}?key=${SHEETS_CONFIG.API_KEY}`;
 
-  const response = await fetch(url);
+  const response = await fetch(url, {
+    cache: 'no-store'  // ← tambah ini, matikan cache
+  });
+
   if (!response.ok) {
     throw new Error(`Google Sheets API error: ${response.status} ${response.statusText}`);
   }
